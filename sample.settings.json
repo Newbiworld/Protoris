@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "QueueStorageUrl": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "BotToken": "Token Here",
+    "BotTestingGround": "Your Server Id here",
+    "FilePath": "FilePath",
+    "IsBetaTesting": true
+  }
+}
