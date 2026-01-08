@@ -8,7 +8,9 @@ namespace Protoris.Service
 {
     public class DiscordComponentHelper
     {
-        public static async Task<ComponentBuilderV2> BuildPlayingTrackResponse(TrackInformations trackInfo, DiscordSocketClient client)
+        public static async Task<ComponentBuilderV2> BuildPlayingTrackResponse(TrackInformations trackInfo,
+            TimeSpan timeSinceStarted,
+            DiscordSocketClient client)
         {
             Emote coolEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.CoolEzel);
             Emote rightArrow = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.RightArrow);
@@ -22,7 +24,7 @@ namespace Protoris.Service
             SectionBuilder musicSection = new SectionBuilder();
             musicSection.WithTextDisplay($"### {coolEzel.ToString()} Protoris Singing");
             musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
-            musicSection.WithTextDisplay($"**Duration** \n{currentTrack.Duration.ToString(@"mm\:ss")}");
+            musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
 
             UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(currentTrack.Artwork);
             ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);

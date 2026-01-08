@@ -23,6 +23,7 @@ builder.Services
     .AddSingleton<IFileConfig, FileConfig>()
     .AddSingleton<IExceptionService, ExceptionService>()
     .AddSingleton<IMusicInteractionService, MusicInteractionService>()
+    .AddSingleton<IDiscordMusicService, DiscordMusicService>()
     .AddHttpClient()
     .AddLavaNode(config =>
     {

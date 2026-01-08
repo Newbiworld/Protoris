@@ -95,7 +95,7 @@ namespace Protoris.Clients.Bot
                 ulong? guildId = before.VoiceChannel?.Guild?.Id;
                 if (guildId != null)
                 {
-                    await _musicService.Stop(guildId.Value, before.VoiceChannel);
+                    await _musicService.Stop(guildId.Value, before.VoiceChannel!, user as IGuildUser);
                 }
             }
         }
@@ -107,30 +107,8 @@ namespace Protoris.Clients.Bot
                 case SocketMessageComponent component:
                     switch (component.Data.CustomId)
                     {
-                        case InteractionEventEnum.MusicSkipped:
-                            await _musicInteractionService.SkipSong(component);
-                            break;
-
-                        case InteractionEventEnum.MusicStopped:
-                            await _musicInteractionService.StopSong(component);
-                            break;
-
-                        case InteractionEventEnum.MusicPlaylist:
-                            await _musicInteractionService.ShowPlaylist(component);
-                            break;
-
-                        case InteractionEventEnum.MusicGoto:
-                            await _musicInteractionService.ShowGoTo(component);
-                            break;
-                            
-                        case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicRemoved):
-                            string trackIdToRemove = component.Data.CustomId.Replace(InteractionEventEnum.MusicRemoved, string.Empty);
-                            await _musicInteractionService.RemoveSong(component, trackIdToRemove);
-                            break;
-
-                        case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicGotoButton):
-                            string trackIdToGoTo = component.Data.CustomId.Replace(InteractionEventEnum.MusicGotoButton, string.Empty);
-                            await _musicInteractionService.GoTo(component, trackIdToGoTo);
+                        case { } when component.Data.CustomId.StartsWith("Music"):
+                            await _musicInteractionService.ApplyCorrectResponse(component.Data.CustomId, component);
                             break;
 
                         default:
