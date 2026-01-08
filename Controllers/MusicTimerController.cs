@@ -4,7 +4,7 @@ using Protoris.Middleware;
 using Protoris.Service.Config;
 using Protoris.Service.Interfaces;
 
-namespace Protoris.NewFolder
+namespace Protoris.Controllers
 {
     public class MusicTimerController : ExceptionHandleMiddleware
     {
