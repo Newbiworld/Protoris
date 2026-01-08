@@ -1,4 +1,5 @@
 ﻿using Discord.Interactions;
+using Protoris.Enum;
 using Protoris.Service.Interfaces;
 
 namespace Protoris.Commands
@@ -20,26 +21,26 @@ namespace Protoris.Commands
         [SlashCommand(name: "stop-lizard", description: "Make the lizard stop singing!")]
         public async Task StopMusicCommand()
         {
-            await _discordMusicService.StopMusic(Context.Interaction);
+            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Stop);
         }
 
         [SlashCommand(name: "skip-lizard", description: "Make the lizard stop singing!")]
         public async Task SkipMusicCommand()
         {
-            await _discordMusicService.SkipMusic(Context.Interaction);
+            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Skip);
 
         }
 
         [SlashCommand(name: "playlist-lizard", description: "Show what the lizard's gonna sing!")]
         public async Task ShowPlaylistCommand()
         {
-            await _discordMusicService.ShowPlaylist(Context.Interaction);
+            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowPlaylist);
         }
 
         [SlashCommand(name: "goto-lizard", description: "Skip to said song!")]
         public async Task ShowGoToCommand()
         {
-            await _discordMusicService.ShowGoTo(Context.Interaction);
+            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowGoTo);
         }
     }
 }

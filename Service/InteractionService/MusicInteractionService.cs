@@ -18,29 +18,29 @@ namespace Protoris.Service.InteractionService
             switch (component.Data.CustomId)
             {
                 case InteractionEventEnum.MusicSkipped:
-                    await _discordMusicService.SkipMusic(component);
+                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.Skip);
                     break;
 
                 case InteractionEventEnum.MusicStopped:
-                    await _discordMusicService.StopMusic(component);
+                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.Stop);
                     break;
 
                 case InteractionEventEnum.MusicPlaylist:
-                    await _discordMusicService.ShowPlaylist(component);
+                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.ShowPlaylist);
                     break;
 
                 case InteractionEventEnum.MusicGoto:
-                    await _discordMusicService.ShowGoTo(component);
+                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.ShowGoTo);
                     break;
 
                 case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicRemoved):
                     string trackIdToRemove = component.Data.CustomId.Replace(InteractionEventEnum.MusicRemoved, string.Empty);
-                    await _discordMusicService.RemoveSong(component, trackIdToRemove);
+                    await _discordMusicService.HandleComponentInteraction(component, trackIdToRemove, EMusicInteraction.Remove);
                     break;
 
                 case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicGotoButton):
                     string trackIdToGoTo = component.Data.CustomId.Replace(InteractionEventEnum.MusicGotoButton, string.Empty);
-                    await _discordMusicService.GoToTrack(component, trackIdToGoTo);
+                    await _discordMusicService.HandleComponentInteraction(component, trackIdToGoTo, EMusicInteraction.GoToSong);
                     break;
             }
         }

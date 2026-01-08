@@ -24,6 +24,8 @@ builder.Services
     .AddSingleton<IExceptionService, ExceptionService>()
     .AddSingleton<IMusicInteractionService, MusicInteractionService>()
     .AddSingleton<IDiscordMusicService, DiscordMusicService>()
+    .AddSingleton<IEmoteService, EmoteService>()
+    .AddSingleton<IMusicComponentService, MusicComponentService>()
     .AddHttpClient()
     .AddLavaNode(config =>
     {

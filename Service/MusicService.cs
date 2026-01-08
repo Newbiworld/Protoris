@@ -1,5 +1,4 @@
-﻿using AngleSharp.Dom.Events;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 using Protoris.Data;
 using Protoris.Service.Interfaces;
@@ -15,15 +14,15 @@ namespace Protoris.Service
         private readonly Dictionary<ulong, MusicPlaylist> _currentPlaylists = new Dictionary<ulong, MusicPlaylist>();
         private readonly Dictionary<ulong, CurrentPlayingMusic> _currentlyPlayingTrack = 
             new Dictionary<ulong, CurrentPlayingMusic>();
-        private readonly DiscordSocketClient _client;
+        private readonly IMusicComponentService _musicComponentService;
 
-        public MusicService(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lava, DiscordSocketClient client)
+        public MusicService(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lava, IMusicComponentService musicComponentService)
         {
             _lava = lava;
-            _client = client;
             _lava.OnTrackEnd += OnEndOfSong;
             _lava.OnTrackStuck += OnSongStuck;
             _lava.OnTrackException += OnTrackException;
+            _musicComponentService = musicComponentService;
         }
 
         #region Commands
@@ -63,52 +62,56 @@ namespace Protoris.Service
             await EnqueueMusic(guildId, interaction, musicPlaylist, lavaPlayer, requestedByUser, url);
         }
 
-        public async Task<ComponentBuilderV2> Stop(ulong guildId, IVoiceChannel currentChannel, IGuildUser requestedBy = null)
+        public async Task Stop(IVoiceChannel currentChannel, IGuildUser requestedBy, IDiscordInteraction? interaction = null)
         {
+            ulong guildId = requestedBy.GuildId;
             LavaPlayer<LavaTrack>? player = await _lava.TryGetPlayerAsync(guildId);
 
             if (player != null && player.Track != null)
             {
                 await LeaveAndCleanUp(guildId, player);
             }
-
-            return await DiscordComponentHelper.BuildStopResponse(requestedBy, _client);
+            else if (interaction != null)
+            {
+                // Don't send message when it's killed manually
+                ComponentBuilderV2 component = await _musicComponentService.BuildStopResponse(requestedBy);
+                await HandleResponse(interaction, component);
+            }
         }
 
-        public async Task<ComponentBuilderV2> Skip(ulong guildId, IGuildUser requestedBy)
+        public async Task Skip(IDiscordInteraction interaction, IGuildUser requestedBy)
         {
+            ulong guildId = requestedBy.GuildId;
+
             LavaPlayer<LavaTrack>? player = await _lava.TryGetPlayerAsync(guildId);
             if (player != null)
             {
                 await player.SeekAsync(_lava, player.Track.Duration);
             }
 
-            return await DiscordComponentHelper.BuildSkipResponse(requestedBy, _client);
+            ComponentBuilderV2 component = await _musicComponentService.BuildSkipResponse(requestedBy);
+            await HandleResponse(interaction, component);       
         }
 
-        public async Task<ComponentBuilderV2> ShowPlaylist(ulong guildId, IGuildUser requestedBy)
+        public async Task ShowPlaylist(IDiscordInteraction interaction, IGuildUser requestedBy)
         {
-            if (_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? guildPlayList))
-            {
-                return await DiscordComponentHelper.BuildPlaylistResponse(requestedBy, guildPlayList.Playlist, _client);
-            }
-
-            return await DiscordComponentHelper.BuildPlaylistResponse(requestedBy, new List<TrackInformations>(), _client);
+            ulong guildId = requestedBy.GuildId;
+            MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
+            ComponentBuilderV2 builder = await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            await HandleResponse(interaction, builder, true);
         }
 
-        public async Task<ComponentBuilderV2> ShowGoTo(ulong guildId, IGuildUser requestedBy)
+        public async Task ShowGoTo(IDiscordInteraction interaction, IGuildUser requestedBy)
         {
-            if (_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? guildPlayList))
-            {
-                return await DiscordComponentHelper.BuildGoToResponse(requestedBy, guildPlayList.Playlist, _client);
-            }
-
-            return await DiscordComponentHelper.BuildGoToResponse(requestedBy, new List<TrackInformations>(), _client);
+            ulong guildId = requestedBy.GuildId;
+            MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
+            ComponentBuilderV2 builder = await _musicComponentService.BuildGoToResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            await HandleResponse(interaction, builder, true);
         }
 
-        public Task<ComponentBuilderV2> RemoveSong(ulong guildId, IGuildUser requestedBy, string trackId)
+        public async Task<ComponentBuilderV2> RemoveSong(IGuildUser requestedBy, string trackId)
         {
-            if (_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? guildPlayList))
+            if (_currentPlaylists.TryGetValue(requestedBy.GuildId, out MusicPlaylist? guildPlayList))
             {
                 TrackInformations? trackToRemove = guildPlayList.Playlist.FirstOrDefault(x => x.Id == trackId);
 
@@ -118,11 +121,12 @@ namespace Protoris.Service
                 }
             }
 
-            return ShowPlaylist(guildId, requestedBy);
+            return await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
         }
 
-        public async Task<ComponentBuilderV2> GoToSong(ulong guildId, IGuildUser requestedBy, string trackId)
+        public async Task<ComponentBuilderV2> GoToSong(IGuildUser requestedBy, string trackId)
         {
+            ulong guildId = requestedBy.GuildId;
             if (_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? guildPlayList))
             {
                 TrackInformations? trackToGoTo = guildPlayList.Playlist.FirstOrDefault(x => x.Id == trackId);
@@ -136,23 +140,32 @@ namespace Protoris.Service
                         guildPlayList.Playlist.RemoveRange(0, numberToRemove);
                     }
 
-                    await Skip(guildId, requestedBy);
-                } 
+                    LavaPlayer<LavaTrack>? player = await _lava.TryGetPlayerAsync(guildId);
+
+                    if (player != null)
+                    {
+                        await player.SeekAsync(_lava, player.Track.Duration);
+                    }
+                }
             }
 
-            return await ShowGoTo(guildId, requestedBy);
+            return await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
         }
 
         public async Task UpdateCurrentlyPlayingSongs()
         {
             foreach (CurrentPlayingMusic currentPlayingMusic in _currentlyPlayingTrack.Values)
             {
-                ComponentBuilderV2 builder = await DiscordComponentHelper.BuildPlayingTrackResponse(
-                    currentPlayingMusic.TrackInfo,
-                    currentPlayingMusic.GetCurrentTime(),
-                    _client
-                );
-                await currentPlayingMusic.OriginalMessage.ModifyAsync(props => props.Components = builder.Build());
+                ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(currentPlayingMusic.TrackInfo, currentPlayingMusic.GetCurrentTime());
+
+                try
+                {
+                    await currentPlayingMusic.OriginalMessage.ModifyAsync(props => props.Components = builder.Build());
+                }
+                catch (Exception)
+                {
+                    // Swallow all exceptions, because this is a race conditions :3
+                }
             }
         }
         #endregion
@@ -171,11 +184,9 @@ namespace Protoris.Service
                     guildPlaylist.Playlist.RemoveAt(0);
                     await player.PlayAsync(_lava, nextTrackInfo.Track);
 
-                    ComponentBuilderV2 builder = await DiscordComponentHelper.BuildPlayingTrackResponse(nextTrackInfo, TimeSpan.Zero, _client);
+                    ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(nextTrackInfo, TimeSpan.Zero);
                     IUserMessage messageSent = await guildPlaylist.OriginationMessageChannel.SendMessageAsync(components: builder.Build());
-                    CurrentPlayingMusic currentPlayingMusic = new CurrentPlayingMusic(nextTrackInfo, messageSent);
-                    if (_currentlyPlayingTrack.ContainsKey(guildId)) _currentlyPlayingTrack.Remove(guildId);
-                    _currentlyPlayingTrack.Add(guildId, currentPlayingMusic);
+                    await ChangeCurrentMusic(nextTrackInfo, messageSent, guildId);
                 }
                 else
                 {
@@ -197,9 +208,28 @@ namespace Protoris.Service
 
                 await _lava.LeaveAsync(playlist.CurrentVoiceChannel);
                 await _lava.DestroyPlayerAsync(guildId);
+
+                foreach (IUserMessage message in playlist.SentMessages)
+                {
+                    try
+                    {
+                        await message.DeleteAsync();
+                    }
+                    catch (Exception)
+                    {
+                        //  Swallow all exceptions (again) since we're not sure which was erased
+                    }
+                }
+
+                ComponentBuilderV2 component = await _musicComponentService.BuildFarewellResponse();
+                await playlist.OriginationMessageChannel.SendMessageAsync(components: component.Build());
             }
 
-            _currentlyPlayingTrack.Remove(guildId);
+            if (_currentlyPlayingTrack.TryGetValue(guildId, out CurrentPlayingMusic? currentPlayingMusic))
+            {
+                await currentPlayingMusic.OriginalMessage.DeleteAsync();
+                _currentlyPlayingTrack.Remove(guildId);
+            }
         }
 
         private async Task EnqueueMusic(ulong guildId,
@@ -209,7 +239,7 @@ namespace Protoris.Service
             IGuildUser requestedBy,
             string url)
         {
-            SearchResponse searchResponse = await SearchMusic(url);
+            SearchResponse searchResponse = await _lava.LoadTrackAsync(url);
 
             if (searchResponse.Type == SearchType.Empty || searchResponse.Type == SearchType.Error)
             {
@@ -219,8 +249,9 @@ namespace Protoris.Service
                     await LeaveAndCleanUp(guildId, lavaPlayer);
                 }
 
-                ComponentBuilderV2 builder = await DiscordComponentHelper.BuildTrackNotFoundResponse(requestedBy, url, _client);
-                await interaction.FollowupAsync(components: builder.Build());
+                ComponentBuilderV2 builder = await _musicComponentService.BuildTrackNotFoundResponse(requestedBy, url);
+                IUserMessage createdMessage = await interaction.FollowupAsync(components: builder.Build());
+                guildPlayList.SentMessages.Add(createdMessage);
             }
 
             TrackInformations trackInfo = new TrackInformations()
@@ -233,25 +264,45 @@ namespace Protoris.Service
             if (lavaPlayer.Track != null)
             {
                 guildPlayList.Playlist.Add(trackInfo);
-                ComponentBuilderV2 builder = await DiscordComponentHelper.BuildAddingTrackResponse(trackInfo, _client);
-                await interaction.FollowupAsync(components: builder.Build());
+                ComponentBuilderV2 builder = await _musicComponentService.BuildAddingTrackResponse(trackInfo);
+                IUserMessage createdMessage = await interaction.FollowupAsync(components: builder.Build());
+                guildPlayList.SentMessages.Add(createdMessage);
             }
             else
             {
                 await lavaPlayer.PlayAsync(_lava, trackInfo.Track);
-                ComponentBuilderV2 builder = await DiscordComponentHelper.BuildPlayingTrackResponse(trackInfo, TimeSpan.Zero, _client);
-                await interaction.FollowupAsync(components: builder.Build());
-                IUserMessage messageSent = await interaction.GetOriginalResponseAsync();
-
-                CurrentPlayingMusic currentPlayingMusic = new CurrentPlayingMusic(trackInfo, messageSent);
-                if (_currentlyPlayingTrack.ContainsKey(guildId)) _currentlyPlayingTrack.Remove(guildId);
-                _currentlyPlayingTrack.Add(guildId, currentPlayingMusic);
+                ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(trackInfo, TimeSpan.Zero);
+                IUserMessage messageSent = await interaction.FollowupAsync(components: builder.Build());
+                await ChangeCurrentMusic(trackInfo, messageSent, guildId);
             }
         }
 
-        private async Task<SearchResponse> SearchMusic(string url)
+        public async Task ChangeCurrentMusic(TrackInformations trackInfo, IUserMessage messageSent, ulong guildId)
         {
-            return await _lava.LoadTrackAsync(url);
+            CurrentPlayingMusic nextPlayingMusic = new CurrentPlayingMusic(trackInfo, messageSent);
+            if (_currentlyPlayingTrack.TryGetValue(guildId, out CurrentPlayingMusic? currentPlayingMusic))
+            {
+                await currentPlayingMusic.OriginalMessage.DeleteAsync();
+                _currentlyPlayingTrack.Remove(guildId);
+            }
+
+            _currentlyPlayingTrack.Add(guildId, nextPlayingMusic);
+        }
+
+        public async Task HandleResponse(IDiscordInteraction interaction, ComponentBuilderV2 builder, bool ephemeral = false)
+        {
+            await interaction.RespondAsync(components: builder.Build(), ephemeral: ephemeral);
+            IUserMessage createdMessage = await interaction.GetOriginalResponseAsync();
+
+            // Should never be null, since it would crash earlier, but as a safeguard
+            if (interaction.GuildId != null)
+            {
+                ulong guildId = interaction.GuildId.Value;
+                MusicPlaylist? guildPlaylist = _currentPlaylists.GetValueOrDefault(guildId);
+
+                if (guildPlaylist != null)
+                    guildPlaylist.SentMessages.Add(createdMessage);
+            }
         }
         #endregion
 

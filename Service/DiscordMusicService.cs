@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Discord.WebSocket;
+using Protoris.Enum;
 using Protoris.Service.Interfaces;
 using Victoria;
 
@@ -20,6 +20,7 @@ namespace Protoris.Service
             _lava = lava;
         }
 
+        #region General Interaction
         public async Task PlayMusic(IDiscordInteraction interaction,
             IMessageChannel currentMessageChannel,
             string url)
@@ -50,7 +51,7 @@ namespace Protoris.Service
             }
         }
 
-        public async Task StopMusic(IDiscordInteraction interaction)
+        public async Task HandleMusicCommand(IDiscordInteraction interaction, EMusicCommand commandEnum)
         {
             try
             {
@@ -63,9 +64,21 @@ namespace Protoris.Service
                     return;
                 }
 
-                ComponentBuilderV2 builder = await _musicService.Stop(guildUser!.GuildId, guildUser!.VoiceChannel, guildUser);
-                await interaction.RespondAsync(components: builder.Build());
-
+                switch (commandEnum)
+                {
+                    case EMusicCommand.Stop:
+                        await _musicService.Stop(guildUser!.VoiceChannel, guildUser, interaction);
+                        break;
+                    case EMusicCommand.Skip:
+                        await _musicService.Skip(interaction, guildUser!);
+                        break;
+                    case EMusicCommand.ShowPlaylist:
+                        await _musicService.ShowPlaylist(interaction, guildUser!);
+                        break;
+                    case EMusicCommand.ShowGoTo:
+                        await _musicService.ShowGoTo(interaction, guildUser!);
+                        break;
+                }
             }
             catch (Exception exception)
             {
@@ -73,122 +86,43 @@ namespace Protoris.Service
                 _exceptionService.LogException(exception);
             }
         }
+        #endregion
 
-        public async Task SkipMusic(IDiscordInteraction interaction)
+        #region  Component Interaction
+        public async Task HandleComponentInteraction(IComponentInteraction interaction, string trackId, EMusicInteraction musicInteraction )
         {
-            try
+            IGuildUser? guildUser = interaction.User as IGuildUser;
+            (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
+
+            if (!canApplyCommand)
             {
-                IGuildUser? guildUser = interaction.User as IGuildUser;
-                (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
-
-                if (!canApplyCommand)
-                {
-                    await interaction.RespondAsync(reason, ephemeral: true);
-                    return;
-                }
-
-                ComponentBuilderV2 builder = await _musicService.Skip(guildUser!.GuildId, guildUser);
-                await interaction.RespondAsync(components: builder.Build());
+                await interaction.RespondAsync(reason, ephemeral: true);
+                return;
             }
-            catch (Exception exception)
+
+            switch (musicInteraction)
             {
-                await interaction.RespondAsync("Ah! Ya tried to skip me, but I fucked up so hard that I couldn't skip the track!");
-                _exceptionService.LogException(exception);
+                case EMusicInteraction.Remove:
+                    await RemoveSong(interaction, guildUser!, trackId);
+                    break;
+                case EMusicInteraction.GoToSong:
+                    await GoToTrack(interaction, guildUser!, trackId);
+                    break;
             }
         }
 
-        public async Task ShowPlaylist(IDiscordInteraction interaction)
+        private async Task RemoveSong(IComponentInteraction interaction, IGuildUser guildUser, string trackId)
         {
-            try
-            {
-                IGuildUser? user = interaction.User as IGuildUser;
-                (bool canApplyCommand, string reason) = await CanApplyCommand(user, _lava);
-
-                if (!canApplyCommand)
-                {
-                    await interaction.RespondAsync(reason, ephemeral: true);
-                    return;
-                }
-
-                ComponentBuilderV2 builder = await _musicService.ShowPlaylist(user!.GuildId, user!);
-                await interaction.RespondAsync(components: builder.Build());
-            }
-            catch (Exception exception)
-            {
-                await interaction.RespondAsync("I tried to read what's in my queue, but I remember that I can't read!");
-                _exceptionService.LogException(exception);
-            }
+            ComponentBuilderV2 builder = await _musicService.RemoveSong(guildUser, trackId);
+            await interaction.UpdateAsync(m => m.Components = builder.Build());
         }
 
-        public async Task RemoveSong(IComponentInteraction interaction, string trackId)
+        private async Task GoToTrack(IComponentInteraction interaction, IGuildUser guildUser, string trackId)
         {
-            try
-            {
-                IGuildUser? guildUser = interaction.User as IGuildUser;
-                (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
-                if (!canApplyCommand)
-                {
-                    await interaction.RespondAsync(reason, ephemeral: true);
-                    return;
-                }
-
-                ComponentBuilderV2 builder = await _musicService.RemoveSong(guildUser!.GuildId, guildUser, trackId);
-                await interaction.UpdateAsync(m => m.Components = builder.Build());
-            }
-            catch (Exception exception)
-            {
-                await interaction.RespondAsync("I tried to remove that song, but well...");
-                _exceptionService.LogException(exception);
-            }
+            ComponentBuilderV2 builder = await _musicService.GoToSong(guildUser, trackId);
+            await interaction.UpdateAsync(m => m.Components = builder.Build());
         }
-
-        public async Task ShowGoTo(IDiscordInteraction interaction)
-        {
-            try
-            {
-                IGuildUser? guildUser = interaction.User as IGuildUser;
-
-                (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
-                if (!canApplyCommand)
-                {
-                    await interaction.RespondAsync(reason, ephemeral: true);
-                    return;
-                }
-
-                ComponentBuilderV2 builder = await _musicService.ShowGoTo(guildUser!.GuildId, guildUser);
-                await interaction.RespondAsync(components: builder.Build(), ephemeral: true);
-            }
-            catch(Exception exception)
-            {
-                await interaction.RespondAsync("AH! Ya can't go to!");
-                _exceptionService.LogException(exception);
-            }
-        }
-
-        public async Task GoToTrack(IComponentInteraction interaction, string trackId)
-        {
-            try
-            {
-                IGuildUser? guildUser = interaction.User as IGuildUser;
-
-                (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
-                if (!canApplyCommand)
-                {
-                    await interaction.RespondAsync(reason, ephemeral: true);
-                    return;
-                }
-
-                await _musicService.GoToSong(guildUser!.GuildId, guildUser, trackId);
-
-                ComponentBuilderV2 builder = await _musicService.ShowGoTo(guildUser.GuildId, guildUser);
-                await interaction.UpdateAsync(m => m.Components = builder.Build());
-            }
-            catch (Exception exception)
-            {
-                await interaction.RespondAsync("AH! Ya can't go to!");
-                _exceptionService.LogException(exception);
-            }
-        }
+        #endregion
 
         #region Validation
         private async Task<(bool canApplyCommand, string reason)> CanApplyCommand(IGuildUser? guildUser, LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lava)

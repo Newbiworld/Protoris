@@ -7,6 +7,20 @@
     "BotToken": "Token Here",
     "BotTestingGround": "Your Server Id here",
     "FilePath": "FilePath",
-    "IsBetaTesting": true
+    "IsBetaTesting": true,
+
+    // Emotes
+    "HeartEzelEmote": "InsertEmoteUlongHere",
+    "SleepingEzelEmote": "InsertEmoteUlongHere",
+    "ThinkingHardEzelEmote": "InsertEmoteUlongHere",
+    "NervousEzelEmote": "InsertEmoteUlongHere",
+    "DisgustEzelEmote": "InsertEmoteUlongHere",
+    "ThinkingEzelEmote": "InsertEmoteUlongHere",
+    "SurprisedEzelEmote": "InsertEmoteUlongHere",
+    "SadEzelEmote": "InsertEmoteUlongHere",
+    "CoolEzelEmote": "InsertEmoteUlongHere",
+    "RightArrowEmote": "InsertEmoteUlongHere",
+    "StopEmote": "InsertEmoteUlongHere",
+    "DeleteEmote": "InsertEmoteUlongHere"
   }
 }

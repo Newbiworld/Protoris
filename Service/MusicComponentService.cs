@@ -2,19 +2,24 @@
 using Discord.WebSocket;
 using Protoris.Data;
 using Protoris.Enum;
+using Protoris.Service.Interfaces;
 using Victoria;
 
 namespace Protoris.Service
 {
-    public class DiscordComponentHelper
+    public class MusicComponentService : IMusicComponentService
     {
-        public static async Task<ComponentBuilderV2> BuildPlayingTrackResponse(TrackInformations trackInfo,
-            TimeSpan timeSinceStarted,
-            DiscordSocketClient client)
+        private readonly IEmoteService _emoteService;
+        public MusicComponentService(IEmoteService emoteService)
         {
-            Emote coolEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.CoolEzel);
-            Emote rightArrow = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.RightArrow);
-            Emote stop = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.Stop);
+            _emoteService = emoteService;
+        }
+
+        public async Task<ComponentBuilderV2> BuildPlayingTrackResponse(TrackInformations trackInfo, TimeSpan timeSinceStarted)
+        {
+            Emote coolEzel = _emoteService.EzelCool;
+            Emote rightArrow = _emoteService.ArrowRight;
+            Emote stop = _emoteService.Stop;
 
             LavaTrack currentTrack = trackInfo.Track;
             IGuildUser requestedBy = trackInfo.RequestedBy;
@@ -51,9 +56,9 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildAddingTrackResponse(TrackInformations trackInfo, DiscordSocketClient client)
+        public async Task<ComponentBuilderV2> BuildAddingTrackResponse(TrackInformations trackInfo)
         {
-            Emote thinkingEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.ThinkingEzel);
+            Emote thinkingEzel = _emoteService.EzelThink;
 
             LavaTrack currentTrack = trackInfo.Track;
             IGuildUser requestedBy = trackInfo.RequestedBy;
@@ -78,9 +83,9 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildTrackNotFoundResponse(IGuildUser requestedBy, string songUrl, DiscordSocketClient client)
+        public async Task<ComponentBuilderV2> BuildTrackNotFoundResponse(IGuildUser requestedBy, string songUrl)
         {
-            Emote nervousEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.NervousEzel);
+            Emote nervousEzel = _emoteService.EzelNervous;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             bool isUrl = Uri.TryCreate(songUrl, UriKind.Absolute, out Uri? uriResult)
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
@@ -105,9 +110,9 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildStopResponse(IGuildUser requestedBy, DiscordSocketClient client)
+        public async Task<ComponentBuilderV2> BuildStopResponse(IGuildUser requestedBy)
         {
-            Emote sadEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.SadEzel);
+            Emote sadEzel = _emoteService.EzelSad;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder leavingContainer = new ContainerBuilder();
@@ -121,9 +126,9 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildSkipResponse(IGuildUser requestedBy, DiscordSocketClient client)
+        public async Task<ComponentBuilderV2> BuildSkipResponse(IGuildUser requestedBy)
         {
-            Emote surprisedEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.SurprisedEzel);
+            Emote surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder skippingContainer = new ContainerBuilder();
@@ -137,9 +142,9 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildRemoveResponse(IGuildUser requestedBy, DiscordSocketClient client, LavaTrack? track)
+        public async Task<ComponentBuilderV2> BuildRemoveResponse(IGuildUser requestedBy, LavaTrack? track)
         {
-            Emote surprisedEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.SurprisedEzel);
+            Emote surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder removeContainer = new ContainerBuilder();
@@ -163,13 +168,10 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser requestedBy,
-            List<TrackInformations> trackInformations,
-            DiscordSocketClient client
-            )
+        public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser requestedBy, List<TrackInformations> trackInformations)
         {
-            Emote thinkingHardEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.ThinkingHardEzel);
-            Emote delete = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.Delete);
+            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
+            Emote delete = _emoteService.Bin;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
@@ -201,13 +203,10 @@ namespace Protoris.Service
             return builder;
         }
 
-        public static async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser requestedBy,
-            List<TrackInformations> trackInformations,
-            DiscordSocketClient client
-        )
+        public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser requestedBy, List<TrackInformations> trackInformations)
         {
-            Emote thinkingHardEzel = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.ThinkingHardEzel);
-            Emote arrowEmote = await client.GetApplicationEmoteAsync(ApplicationEmoteCodeEnum.RightArrow);
+            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
+            Emote arrowEmote = _emoteService.ArrowRight;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
@@ -239,7 +238,23 @@ namespace Protoris.Service
             return builder;
         }
 
-        private static ButtonBuilder CreateButton(Emote emote, string id, ButtonStyle style)
+        public async Task<ComponentBuilderV2> BuildFarewellResponse()
+        {
+            Emote sleepingEzel = _emoteService.EzelSleep;
+            Emote heartEzel = _emoteService.EzelHeart;
+            ComponentBuilderV2 builder = new ComponentBuilderV2();
+
+            ContainerBuilder farewellContainer = new ContainerBuilder();
+            farewellContainer.WithTextDisplay($"### {sleepingEzel.ToString()} Protoris sleeping");
+            farewellContainer.WithTextDisplay($"**Protoris sang his heart to y'all, now it's time for a nap**");
+            farewellContainer.WithTextDisplay($"Don't worry, he'll be back soon to sing more to you {heartEzel.ToString()}");
+            farewellContainer.WithAccentColor(Color.Blue);
+            builder.WithContainer(farewellContainer);
+            return builder;
+        }
+
+        #region Helper
+        private ButtonBuilder CreateButton(Emote emote, string id, ButtonStyle style)
         {
             ButtonBuilder buttonBuilder = new ButtonBuilder();
             buttonBuilder.WithEmote(emote);
@@ -248,7 +263,7 @@ namespace Protoris.Service
             return buttonBuilder;
         }
 
-        private static ButtonBuilder CreateButton(string label, string id, ButtonStyle style)
+        private ButtonBuilder CreateButton(string label, string id, ButtonStyle style)
         {
             ButtonBuilder buttonBuilder = new ButtonBuilder();
             buttonBuilder.WithLabel(label);
@@ -256,5 +271,6 @@ namespace Protoris.Service
             buttonBuilder.WithStyle(style);
             return buttonBuilder;
         }
+        #endregion
     }
 }

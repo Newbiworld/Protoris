@@ -18,11 +18,13 @@ namespace Protoris.Clients.Bot
         private readonly IServiceProvider _servicesProviders;
         private readonly IMusicInteractionService _musicInteractionService;
         private readonly IMusicService _musicService;
+        private readonly IEmoteService _emoteService;
 
         public BotHost(DiscordSocketClient client,
             IBotConfig botConfig,
             IServiceProvider serviceProvider,
             IMusicService musicService,
+            IEmoteService emoteService,
             IMusicInteractionService musicInteractionService)
         {
             _client = client;
@@ -31,6 +33,7 @@ namespace Protoris.Clients.Bot
             _servicesProviders = serviceProvider;
             _musicService = musicService;
             _musicInteractionService = musicInteractionService;
+            _emoteService = emoteService;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -60,6 +63,8 @@ namespace Protoris.Clients.Bot
 
         private async Task RegisterCommands()
         {
+            await _emoteService.LoadEmotesAsync(_client);
+
             await _servicesProviders.UseLavaNodeAsync();
 
             // Add modules
@@ -95,7 +100,7 @@ namespace Protoris.Clients.Bot
                 ulong? guildId = before.VoiceChannel?.Guild?.Id;
                 if (guildId != null)
                 {
-                    await _musicService.Stop(guildId.Value, before.VoiceChannel!, user as IGuildUser);
+                    await _musicService.Stop(before.VoiceChannel!, user as IGuildUser);
                 }
             }
         }
