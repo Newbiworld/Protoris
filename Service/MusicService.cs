@@ -260,6 +260,7 @@ namespace Protoris.Service
                 ComponentBuilderV2 builder = await _musicComponentService.BuildTrackNotFoundResponse(guildPlayList.BotUser, requestedBy, url);
                 IUserMessage createdMessage = await interaction.FollowupAsync(components: builder.Build());
                 guildPlayList.SentMessages.Add(createdMessage);
+                return;
             }
 
             TrackInformations trackInfo = new TrackInformations()
