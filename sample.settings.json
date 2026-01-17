@@ -4,10 +4,12 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "QueueStorageUrl": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    // Bot config
     "BotToken": "Token Here",
     "BotTestingGround": "Your Server Id here",
     "FilePath": "FilePath",
-    "IsBetaTesting": true,
+    "IsBetaTesting": false,
 
     // Emotes
     "HasEmotes": false, //  Set to true if you want to use emotes
