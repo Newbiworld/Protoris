@@ -24,8 +24,6 @@ builder.Services
     .AddSingleton<IExceptionService, ExceptionService>()
     .AddSingleton<IMusicInteractionService, MusicInteractionService>()
     .AddSingleton<IDiscordMusicService, DiscordMusicService>()
-    .AddSingleton<IEmoteService, EmoteService>()
-    .AddSingleton<IMusicComponentService, MusicComponentService>()
     .AddHttpClient()
     .AddLavaNode(config =>
     {
@@ -39,5 +37,20 @@ builder.Services
     .AddSingleton(new DiscordSocketClient())
     .AddSingleton<IBotConfig, BotConfig>()
     .AddHostedService<BotHost>();
+
+string? hasEmotes = Environment.GetEnvironmentVariable("HasEmotes");
+
+if (string.IsNullOrEmpty(hasEmotes) || hasEmotes.ToLower() != "true")
+{
+    builder.Services
+        .AddSingleton<IEmoteService, FakeEmoteService>()
+        .AddSingleton<IMusicComponentService, MusicComponentServiceWithoutEmotes>();
+}
+else
+{
+    builder.Services
+        .AddSingleton<IEmoteService, EmoteService>()
+        .AddSingleton<IMusicComponentService, MusicComponentService>();
+}
 
 builder.Build().Run();

@@ -15,7 +15,7 @@ namespace Protoris.Controllers
         }
 
         [Function(nameof(UpdateCurrentPlayingSongTimer))]
-        public async Task UpdateCurrentPlayingSongTimer([TimerTrigger("*/2 * * * * *")] TimerInfo myTimer, ILogger log)
+        public async Task UpdateCurrentPlayingSongTimer([TimerTrigger("* * * * * *")] TimerInfo myTimer, ILogger log)
         {
             await _musicService.UpdateCurrentlyPlayingSongs();
         }

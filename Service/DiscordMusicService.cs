@@ -21,32 +21,32 @@ namespace Protoris.Service
         }
 
         #region General Interaction
-        public async Task PlayMusic(IDiscordInteraction interaction,
+        public async Task PlayMusic(IInteractionContext context,
             IMessageChannel currentMessageChannel,
             string url)
         {
             try
             {
-                IGuildUser? user = interaction.User as IGuildUser;
+                IGuildUser? user = context.Interaction.User as IGuildUser;
                 if (user == null)
                 {
-                    await interaction.RespondAsync("You don't event exist!", ephemeral: true);
+                    await context.Interaction.RespondAsync("You don't event exist!", ephemeral: true);
                     return;
                 }
 
                 IVoiceChannel? currentVoiceChannel = user.VoiceChannel;
                 if (currentVoiceChannel == null)
                 {
-                    await interaction.RespondAsync("Woah, I can't sing when you're not even in VC!", ephemeral: true);
+                    await context.Interaction.RespondAsync("Woah, I can't sing when you're not even in VC!", ephemeral: true);
                     return;
                 }
 
-                await interaction.DeferAsync(); // In the off chance the loading takes more than 3 seconds, we defers it
-                await _musicService.AddMusic(interaction, currentVoiceChannel, currentMessageChannel, user, url);
+                await context.Interaction.DeferAsync(); // In the off chance the loading takes more than 3 seconds, we defers it
+                await _musicService.AddMusic(context, currentVoiceChannel, currentMessageChannel, user, url);
             }
             catch (Exception exception)
             {
-                await interaction.RespondAsync("Awww man, something's wrong, I couldn't handle this music request!");
+                await context.Interaction.RespondAsync("Awww man, something's wrong, I couldn't handle this music request!");
                 _exceptionService.LogException(exception);
             }
         }

@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord.WebSocket;
 using Protoris.Data;
 using Protoris.Service.Interfaces;
 using Victoria;
@@ -26,7 +25,7 @@ namespace Protoris.Service
         }
 
         #region Commands
-        public async Task AddMusic(IDiscordInteraction interaction,
+        public async Task AddMusic(IInteractionContext context,
             IVoiceChannel currentChannel,
             IMessageChannel currentMessageChannel,
             IGuildUser requestedByUser,
@@ -49,8 +48,10 @@ namespace Protoris.Service
 
             if (!_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? musicPlaylist))
             {
+                IGuildUser botUser = await context.Guild.GetCurrentUserAsync();
                 musicPlaylist = new MusicPlaylist()
                 {
+                    BotUser = botUser,
                     GuildId = guildId,
                     OriginationMessageChannel = currentMessageChannel,
                 };
@@ -59,7 +60,7 @@ namespace Protoris.Service
             }
 
             musicPlaylist.CurrentVoiceChannel = currentChannel;
-            await EnqueueMusic(guildId, interaction, musicPlaylist, lavaPlayer, requestedByUser, url);
+            await EnqueueMusic(guildId, context.Interaction, musicPlaylist, lavaPlayer, requestedByUser, url);
         }
 
         public async Task Stop(IVoiceChannel currentChannel, IGuildUser requestedBy, IDiscordInteraction? interaction = null)
@@ -73,8 +74,9 @@ namespace Protoris.Service
             }
             else if (interaction != null)
             {
+                MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
                 // Don't send message when it's killed manually
-                ComponentBuilderV2 component = await _musicComponentService.BuildStopResponse(requestedBy);
+                ComponentBuilderV2 component = await _musicComponentService.BuildStopResponse(guildPlayList.BotUser, requestedBy);
                 await HandleResponse(interaction, component);
             }
         }
@@ -89,7 +91,8 @@ namespace Protoris.Service
                 await player.SeekAsync(_lava, player.Track.Duration);
             }
 
-            ComponentBuilderV2 component = await _musicComponentService.BuildSkipResponse(requestedBy);
+            MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
+            ComponentBuilderV2 component = await _musicComponentService.BuildSkipResponse(guildPlayList.BotUser, requestedBy);
             await HandleResponse(interaction, component);       
         }
 
@@ -97,7 +100,7 @@ namespace Protoris.Service
         {
             ulong guildId = requestedBy.GuildId;
             MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
-            ComponentBuilderV2 builder = await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            ComponentBuilderV2 builder = await _musicComponentService.BuildPlaylistResponse(guildPlayList.BotUser, requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
             await HandleResponse(interaction, builder, true);
         }
 
@@ -105,7 +108,7 @@ namespace Protoris.Service
         {
             ulong guildId = requestedBy.GuildId;
             MusicPlaylist? guildPlayList = _currentPlaylists.GetValueOrDefault(guildId);
-            ComponentBuilderV2 builder = await _musicComponentService.BuildGoToResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            ComponentBuilderV2 builder = await _musicComponentService.BuildGoToResponse(guildPlayList.BotUser, requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
             await HandleResponse(interaction, builder, true);
         }
 
@@ -121,7 +124,7 @@ namespace Protoris.Service
                 }
             }
 
-            return await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            return await _musicComponentService.BuildPlaylistResponse(guildPlayList.BotUser, requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
         }
 
         public async Task<ComponentBuilderV2> GoToSong(IGuildUser requestedBy, string trackId)
@@ -149,23 +152,28 @@ namespace Protoris.Service
                 }
             }
 
-            return await _musicComponentService.BuildPlaylistResponse(requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
+            return await _musicComponentService.BuildPlaylistResponse(guildPlayList!.BotUser, requestedBy, guildPlayList?.Playlist ?? new List<TrackInformations>());
         }
 
         public async Task UpdateCurrentlyPlayingSongs()
         {
-            foreach (CurrentPlayingMusic currentPlayingMusic in _currentlyPlayingTrack.Values)
+            try
             {
-                ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(currentPlayingMusic.TrackInfo, currentPlayingMusic.GetCurrentTime());
+                foreach (CurrentPlayingMusic currentPlayingMusic in _currentlyPlayingTrack.Values)
+                {
+                    MusicPlaylist? playlist = _currentPlaylists.GetValueOrDefault(currentPlayingMusic.GuildId);
+                    if (playlist != null)
+                    {
 
-                try
-                {
-                    await currentPlayingMusic.OriginalMessage.ModifyAsync(props => props.Components = builder.Build());
+                        ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(playlist.BotUser, currentPlayingMusic.TrackInfo, currentPlayingMusic.GetCurrentTime());
+                        await currentPlayingMusic.OriginalMessage.ModifyAsync(props => props.Components = builder.Build());
+
+                    }
                 }
-                catch (Exception)
-                {
-                    // Swallow all exceptions, because this is a race conditions :3
-                }
+            }
+            catch (Exception)
+            {
+                // Swallow all exceptions, because this is a race conditions :3
             }
         }
         #endregion
@@ -184,7 +192,7 @@ namespace Protoris.Service
                     guildPlaylist.Playlist.RemoveAt(0);
                     await player.PlayAsync(_lava, nextTrackInfo.Track);
 
-                    ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(nextTrackInfo, TimeSpan.Zero);
+                    ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(guildPlaylist.BotUser, nextTrackInfo, TimeSpan.Zero);
                     IUserMessage messageSent = await guildPlaylist.OriginationMessageChannel.SendMessageAsync(components: builder.Build());
                     await ChangeCurrentMusic(nextTrackInfo, messageSent, guildId);
                 }
@@ -221,7 +229,7 @@ namespace Protoris.Service
                     }
                 }
 
-                ComponentBuilderV2 component = await _musicComponentService.BuildFarewellResponse();
+                ComponentBuilderV2 component = await _musicComponentService.BuildFarewellResponse(playlist.BotUser);
                 await playlist.OriginationMessageChannel.SendMessageAsync(components: component.Build());
             }
 
@@ -249,7 +257,7 @@ namespace Protoris.Service
                     await LeaveAndCleanUp(guildId, lavaPlayer);
                 }
 
-                ComponentBuilderV2 builder = await _musicComponentService.BuildTrackNotFoundResponse(requestedBy, url);
+                ComponentBuilderV2 builder = await _musicComponentService.BuildTrackNotFoundResponse(guildPlayList.BotUser, requestedBy, url);
                 IUserMessage createdMessage = await interaction.FollowupAsync(components: builder.Build());
                 guildPlayList.SentMessages.Add(createdMessage);
             }
@@ -264,14 +272,14 @@ namespace Protoris.Service
             if (lavaPlayer.Track != null)
             {
                 guildPlayList.Playlist.Add(trackInfo);
-                ComponentBuilderV2 builder = await _musicComponentService.BuildAddingTrackResponse(trackInfo);
+                ComponentBuilderV2 builder = await _musicComponentService.BuildAddingTrackResponse(guildPlayList.BotUser, trackInfo);
                 IUserMessage createdMessage = await interaction.FollowupAsync(components: builder.Build());
                 guildPlayList.SentMessages.Add(createdMessage);
             }
             else
             {
                 await lavaPlayer.PlayAsync(_lava, trackInfo.Track);
-                ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(trackInfo, TimeSpan.Zero);
+                ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(guildPlayList.BotUser, trackInfo, TimeSpan.Zero);
                 IUserMessage messageSent = await interaction.FollowupAsync(components: builder.Build());
                 await ChangeCurrentMusic(trackInfo, messageSent, guildId);
             }
@@ -279,7 +287,7 @@ namespace Protoris.Service
 
         public async Task ChangeCurrentMusic(TrackInformations trackInfo, IUserMessage messageSent, ulong guildId)
         {
-            CurrentPlayingMusic nextPlayingMusic = new CurrentPlayingMusic(trackInfo, messageSent);
+            CurrentPlayingMusic nextPlayingMusic = new CurrentPlayingMusic(trackInfo, messageSent, guildId);
             if (_currentlyPlayingTrack.TryGetValue(guildId, out CurrentPlayingMusic? currentPlayingMusic))
             {
                 await currentPlayingMusic.OriginalMessage.DeleteAsync();

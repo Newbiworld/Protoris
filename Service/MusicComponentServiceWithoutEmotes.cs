@@ -8,27 +8,17 @@ using Victoria;
 
 namespace Protoris.Service
 {
-    public class MusicComponentService : IMusicComponentService
+    public class MusicComponentServiceWithoutEmotes : IMusicComponentService
     {
-        private readonly IEmoteService _emoteService;
-        public MusicComponentService(IEmoteService emoteService)
-        {
-            _emoteService = emoteService;
-        }
-
         public async Task<ComponentBuilderV2> BuildPlayingTrackResponse(IGuildUser botUser, TrackInformations trackInfo, TimeSpan timeSinceStarted)
         {
-            Emote coolEzel = _emoteService.EzelCool;
-            Emote rightArrow = _emoteService.ArrowRight;
-            Emote stop = _emoteService.Stop;
-
             LavaTrack currentTrack = trackInfo.Track;
             IGuildUser requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             SectionBuilder musicSection = new SectionBuilder();
-            musicSection.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
+            musicSection.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Singing");
             musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
             musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
 
@@ -44,8 +34,8 @@ namespace Protoris.Service
             ContainerBuilder actionContainer = new ContainerBuilder();
             actionContainer.WithActionRow(
             [
-                CreateButton(stop, InteractionEventEnum.MusicStopped, ButtonStyle.Danger),
-                CreateButton(rightArrow, InteractionEventEnum.MusicSkipped, ButtonStyle.Primary),
+                CreateButton("Stop", InteractionEventEnum.MusicStopped, ButtonStyle.Danger),
+                CreateButton("Skip", InteractionEventEnum.MusicSkipped, ButtonStyle.Primary),
                 CreateButton("Playlist", InteractionEventEnum.MusicPlaylist, ButtonStyle.Primary),
                 CreateButton("Goto", InteractionEventEnum.MusicGoto, ButtonStyle.Primary),
             ]);
@@ -59,8 +49,6 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildAddingTrackResponse(IGuildUser botUser, TrackInformations trackInfo)
         {
-            Emote thinkingEzel = _emoteService.EzelThink;
-
             LavaTrack currentTrack = trackInfo.Track;
             IGuildUser requestedBy = trackInfo.RequestedBy;
 
@@ -70,7 +58,7 @@ namespace Protoris.Service
             ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
             SectionBuilder musicSection = new SectionBuilder();
 
-            musicSection.WithTextDisplay($"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding");
+            musicSection.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Adding");
             musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
             musicSection.WithTextDisplay($"**Duration** \n{currentTrack.Duration.ToString(@"mm\:ss")}");
             musicSection.WithAccessory(thumbnailBuilder);
@@ -86,13 +74,12 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildTrackNotFoundResponse(IGuildUser botUser, IGuildUser requestedBy, string songUrl)
         {
-            Emote nervousEzel = _emoteService.EzelNervous;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             bool isUrl = Uri.TryCreate(songUrl, UriKind.Absolute, out Uri? uriResult)
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
 
             ContainerBuilder notFoundContainer = new ContainerBuilder();
-            notFoundContainer.WithTextDisplay($"### {nervousEzel.ToString()} {botUser.GetNicknameOrUsername()} Not Found");
+            notFoundContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Not Found");
 
             if (isUrl)
             {
@@ -113,11 +100,10 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildStopResponse(IGuildUser botUser, IGuildUser requestedBy)
         {
-            Emote sadEzel = _emoteService.EzelSad;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder leavingContainer = new ContainerBuilder();
-            leavingContainer.WithTextDisplay($"### {sadEzel.ToString()} {botUser.GetNicknameOrUsername()} Leaving");
+            leavingContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Leaving");
             leavingContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to leave while singing**");
             leavingContainer.WithTextDisplay($"Rudely stopped by: {requestedBy.GetNicknameOrUsername()}");
 
@@ -129,11 +115,10 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildSkipResponse(IGuildUser botUser, IGuildUser requestedBy)
         {
-            Emote surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder skippingContainer = new ContainerBuilder();
-            skippingContainer.WithTextDisplay($"### {surprisedEzel.ToString()} {botUser.GetNicknameOrUsername()} Skipping");
+            skippingContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Skipping");
             skippingContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to skip this song!**");
             skippingContainer.WithTextDisplay($"Rudely skipped by: {requestedBy.GetNicknameOrUsername()}");
 
@@ -145,11 +130,10 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildRemoveResponse(IGuildUser botUser, IGuildUser requestedBy, LavaTrack? track)
         {
-            Emote surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder removeContainer = new ContainerBuilder();
-            removeContainer.WithTextDisplay($"### {surprisedEzel.ToString()} {botUser.GetNicknameOrUsername()} Removing");
+            removeContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Removing");
             removeContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to remove a song!**");
 
             if (track != null)
@@ -171,12 +155,10 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations)
         {
-            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
-            Emote delete = _emoteService.Bin;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
-            playlistContainer.WithTextDisplay($"### {thinkingHardEzel.ToString()} {botUser.GetNicknameOrUsername()} Playlist");
+            playlistContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} Playlist");
             playlistContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to show his playlist!**");
 
             if (!trackInformations.Any())
@@ -192,7 +174,7 @@ namespace Protoris.Service
                     string id = trackInfo.Id;
 
                     SectionBuilder trackSection = new SectionBuilder();
-                    trackSection.WithAccessory(CreateButton(delete, $"{InteractionEventEnum.MusicRemoved}{id}", ButtonStyle.Danger));
+                    trackSection.WithAccessory(CreateButton("Delete", $"{InteractionEventEnum.MusicRemoved}{id}", ButtonStyle.Danger));
                     trackSection.WithTextDisplay($"{i}. [{track.Title}]({track.Url}) | Duration: {track.Duration.ToString(@"mm\:ss")}");
                     playlistContainer.AddComponent(trackSection);
                 }
@@ -206,12 +188,10 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations)
         {
-            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
-            Emote arrowEmote = _emoteService.ArrowRight;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
-            playlistContainer.WithTextDisplay($"### {thinkingHardEzel.ToString()} {botUser.GetNicknameOrUsername()} GoTo");
+            playlistContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} GoTo");
             playlistContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked skip to a song!**");
 
             if (!trackInformations.Any())
@@ -227,7 +207,7 @@ namespace Protoris.Service
                     string id = trackInfo.Id;
 
                     SectionBuilder trackSection = new SectionBuilder();
-                    trackSection.WithAccessory(CreateButton(arrowEmote, $"{InteractionEventEnum.MusicGotoButton}{id}", ButtonStyle.Danger));
+                    trackSection.WithAccessory(CreateButton("Goto", $"{InteractionEventEnum.MusicGotoButton}{id}", ButtonStyle.Danger));
                     trackSection.WithTextDisplay($"{i}. [{track.Title}]({track.Url}) | Duration: {track.Duration.ToString(@"mm\:ss")}");
                     playlistContainer.AddComponent(trackSection);
                 }
@@ -241,14 +221,12 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildFarewellResponse(IGuildUser botUser)
         {
-            Emote sleepingEzel = _emoteService.EzelSleep;
-            Emote heartEzel = _emoteService.EzelHeart;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder farewellContainer = new ContainerBuilder();
-            farewellContainer.WithTextDisplay($"### {sleepingEzel.ToString()} {botUser.GetNicknameOrUsername()} sleeping");
+            farewellContainer.WithTextDisplay($"### {botUser.GetNicknameOrUsername()} sleeping");
             farewellContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} sang his heart to y'all, now it's time for a nap**");
-            farewellContainer.WithTextDisplay($"Don't worry, he'll be back soon to sing more to you {heartEzel.ToString()}");
+            farewellContainer.WithTextDisplay($"Don't worry, he'll be back soon to sing more to you");
             farewellContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(farewellContainer);
             return builder;

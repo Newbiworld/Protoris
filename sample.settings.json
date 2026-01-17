@@ -10,6 +10,7 @@
     "IsBetaTesting": true,
 
     // Emotes
+    "HasEmotes": false, //  Set to true if you want to use emotes
     "HeartEzelEmote": "InsertEmoteUlongHere",
     "SleepingEzelEmote": "InsertEmoteUlongHere",
     "ThinkingHardEzelEmote": "InsertEmoteUlongHere",

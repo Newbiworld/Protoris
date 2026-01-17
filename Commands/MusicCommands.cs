@@ -15,7 +15,7 @@ namespace Protoris.Commands
         [SlashCommand(name: "play-lizard", description: "Make the lizard play musics")]
         public async Task PlayMusicCommand(string url)
         {
-            await _discordMusicService.PlayMusic(Context.Interaction, Context.Channel, url);
+            await _discordMusicService.PlayMusic(Context, Context.Channel, url);
         }
 
         [SlashCommand(name: "stop-lizard", description: "Make the lizard stop singing!")]

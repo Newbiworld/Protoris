@@ -7,7 +7,7 @@ namespace Protoris.Commands
     {
         protected IMessageChannel GetInteractionChannel()
         {
-            return Context.Channel; // What happens if it's in dms?
+            return Context.Channel;
         }
 
         protected IGuildUser? GetUser()

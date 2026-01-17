@@ -4,7 +4,7 @@ namespace Protoris.Service.Interfaces
 {
     public interface IMusicService
     {
-        public Task AddMusic(IDiscordInteraction interaction, IVoiceChannel currentChannel, IMessageChannel currentMessageChannel, IGuildUser requestedByUser, string url);
+        public Task AddMusic(IInteractionContext context, IVoiceChannel currentChannel, IMessageChannel currentMessageChannel, IGuildUser requestedByUser, string url);
         public Task Stop(IVoiceChannel currentChannel, IGuildUser requestedBy, IDiscordInteraction? interaction = null);
         public Task Skip(IDiscordInteraction interaction, IGuildUser requestedBy);
         public Task ShowPlaylist(IDiscordInteraction interaction, IGuildUser requestedBy);
