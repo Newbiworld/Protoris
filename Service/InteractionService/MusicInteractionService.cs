@@ -25,12 +25,9 @@ namespace Protoris.Service.InteractionService
                     await _discordMusicService.HandleMusicCommand(component, EMusicCommand.Stop);
                     break;
 
-                case InteractionEventEnum.MusicPlaylist:
-                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.ShowPlaylist);
-                    break;
-
-                case InteractionEventEnum.MusicGoto:
-                    await _discordMusicService.HandleMusicCommand(component, EMusicCommand.ShowGoTo);
+                case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicPlaylist):
+                    string currentPlaylistParam = component.Data.CustomId.Replace(InteractionEventEnum.MusicPlaylist, string.Empty);
+                    await _discordMusicService.HandleComponentInteraction(component, currentPlaylistParam, EMusicInteraction.Playlist);
                     break;
 
                 case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicRemoved):
@@ -42,6 +39,12 @@ namespace Protoris.Service.InteractionService
                     string trackIdToGoTo = component.Data.CustomId.Replace(InteractionEventEnum.MusicGotoButton, string.Empty);
                     await _discordMusicService.HandleComponentInteraction(component, trackIdToGoTo, EMusicInteraction.GoToSong);
                     break;
+
+                case { } when component.Data.CustomId.StartsWith(InteractionEventEnum.MusicGoto):
+                    string currentGoToParam = component.Data.CustomId.Replace(InteractionEventEnum.MusicGoto, string.Empty);
+                    await _discordMusicService.HandleComponentInteraction(component, currentGoToParam, EMusicInteraction.GoTo);
+                    break;
+
             }
         }
     }

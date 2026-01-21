@@ -18,6 +18,12 @@ namespace Protoris.Commands
             await _discordMusicService.PlayMusic(Context, Context.Channel, url);
         }
 
+        [SlashCommand(name: "multiple-play-lizard", description: "Play a playlist!")]
+        public async Task MulitplePlayCommand(string url)
+        {
+            await _discordMusicService.MultiplePlayMusic(Context, Context.Channel, url);
+        }
+
         [SlashCommand(name: "stop-lizard", description: "Make the lizard stop singing!")]
         public async Task StopMusicCommand()
         {

@@ -44,10 +44,10 @@ namespace Protoris.Service
             ContainerBuilder actionContainer = new ContainerBuilder();
             actionContainer.WithActionRow(
             [
-                CreateButton(stop, InteractionEventEnum.MusicStopped, ButtonStyle.Danger),
-                CreateButton(rightArrow, InteractionEventEnum.MusicSkipped, ButtonStyle.Primary),
-                CreateButton("Playlist", InteractionEventEnum.MusicPlaylist, ButtonStyle.Primary),
-                CreateButton("Goto", InteractionEventEnum.MusicGoto, ButtonStyle.Primary),
+                DiscordComponentHelper.CreateButton(stop, InteractionEventEnum.MusicStopped, ButtonStyle.Danger),
+                DiscordComponentHelper.CreateButton(rightArrow, InteractionEventEnum.MusicSkipped, ButtonStyle.Primary),
+                DiscordComponentHelper.CreateButton("Playlist", $"{InteractionEventEnum.MusicPlaylist}init", ButtonStyle.Primary),
+                DiscordComponentHelper.CreateButton("Goto", $"{InteractionEventEnum.MusicGoto}init", ButtonStyle.Primary),
             ]);
 
             actionContainer.WithAccentColor(Color.DarkerGrey);
@@ -78,6 +78,33 @@ namespace Protoris.Service
             ContainerBuilder musicContainer = new ContainerBuilder();
             musicContainer.AddComponent(musicSection);
             musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithAccentColor(Color.Blue);
+            builder.WithContainer(musicContainer);
+
+            return builder;
+        }
+
+        public async Task<ComponentBuilderV2> BuildAddingTracksResponse(IGuildUser botUser, PlaylistToAddInfo PlaylistInfo)
+        {
+            Emote thinkingEzel = _emoteService.EzelThink;
+            IGuildUser requestedBy = PlaylistInfo.RequestedBy;
+            string playlistName = string.IsNullOrEmpty(PlaylistInfo.PlaylistName) ? "Unknown" : PlaylistInfo.PlaylistName;
+            TimeSpan totalTime = TimeSpan.Zero;
+            PlaylistInfo.PlaylistTracksInfo.ForEach(x =>
+            {
+                if (x?.Track?.Duration != null)
+                {
+                    totalTime += x.Track.Duration;
+                }
+            });
+
+            ComponentBuilderV2 builder = new ComponentBuilderV2();
+
+            ContainerBuilder musicContainer = new ContainerBuilder();
+            musicContainer.WithTextDisplay($"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding a LOT");
+            musicContainer.WithTextDisplay($"**{playlistName}** \n[Listen Here]({PlaylistInfo.PlaylistUrl})");
+            musicContainer.WithTextDisplay($"**Number of songs added:** \n{PlaylistInfo.PlaylistTracksInfo.Count}");
+            musicContainer.WithTextDisplay($"**Duration** \n{totalTime.ToString(@"hh\:mm\:ss")}"); musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
             musicContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(musicContainer);
 
@@ -169,7 +196,7 @@ namespace Protoris.Service
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations)
+        public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations, int index)
         {
             Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
             Emote delete = _emoteService.Bin;
@@ -179,24 +206,12 @@ namespace Protoris.Service
             playlistContainer.WithTextDisplay($"### {thinkingHardEzel.ToString()} {botUser.GetNicknameOrUsername()} Playlist");
             playlistContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to show his playlist!**");
 
-            if (!trackInformations.Any())
-            {
-                playlistContainer.WithTextDisplay($"But he had nothing to show");
-            }
-            else
-            {
-                for (int i = 1; i < trackInformations.Count + 1; i++)
-                {
-                    TrackInformations trackInfo = trackInformations[i - 1];
-                    LavaTrack track = trackInfo.Track;
-                    string id = trackInfo.Id;
+            TrackInformationsTable tracksTable = new TrackInformationsTable(trackInformations,
+                index,
+                InteractionEventEnum.MusicPlaylist,
+                InteractionEventEnum.MusicRemoved);
 
-                    SectionBuilder trackSection = new SectionBuilder();
-                    trackSection.WithAccessory(CreateButton(delete, $"{InteractionEventEnum.MusicRemoved}{id}", ButtonStyle.Danger));
-                    trackSection.WithTextDisplay($"{i}. [{track.Title}]({track.Url}) | Duration: {track.Duration.ToString(@"mm\:ss")}");
-                    playlistContainer.AddComponent(trackSection);
-                }
-            }
+            tracksTable.ApplyTableToContainer(playlistContainer, (string buttonId) => DiscordComponentHelper.CreateButton(delete, buttonId, ButtonStyle.Danger));
 
             playlistContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
             playlistContainer.WithAccentColor(Color.Blue);
@@ -204,7 +219,7 @@ namespace Protoris.Service
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations)
+        public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations, int index)
         {
             Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
             Emote arrowEmote = _emoteService.ArrowRight;
@@ -214,24 +229,12 @@ namespace Protoris.Service
             playlistContainer.WithTextDisplay($"### {thinkingHardEzel.ToString()} {botUser.GetNicknameOrUsername()} GoTo");
             playlistContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked skip to a song!**");
 
-            if (!trackInformations.Any())
-            {
-                playlistContainer.WithTextDisplay($"But he had nothing left to sing");
-            }
-            else
-            {
-                for (int i = 1; i < trackInformations.Count + 1; i++)
-                {
-                    TrackInformations trackInfo = trackInformations[i - 1];
-                    LavaTrack track = trackInfo.Track;
-                    string id = trackInfo.Id;
+            TrackInformationsTable tracksTable = new TrackInformationsTable(trackInformations,
+                index,
+                InteractionEventEnum.MusicGoto,
+                InteractionEventEnum.MusicGotoButton);
 
-                    SectionBuilder trackSection = new SectionBuilder();
-                    trackSection.WithAccessory(CreateButton(arrowEmote, $"{InteractionEventEnum.MusicGotoButton}{id}", ButtonStyle.Danger));
-                    trackSection.WithTextDisplay($"{i}. [{track.Title}]({track.Url}) | Duration: {track.Duration.ToString(@"mm\:ss")}");
-                    playlistContainer.AddComponent(trackSection);
-                }
-            }
+            tracksTable.ApplyTableToContainer(playlistContainer, (string buttonId) => DiscordComponentHelper.CreateButton(arrowEmote, buttonId, ButtonStyle.Danger));
 
             playlistContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
             playlistContainer.WithAccentColor(Color.Blue);
@@ -253,25 +256,5 @@ namespace Protoris.Service
             builder.WithContainer(farewellContainer);
             return builder;
         }
-
-        #region Helper
-        private ButtonBuilder CreateButton(Emote emote, string id, ButtonStyle style)
-        {
-            ButtonBuilder buttonBuilder = new ButtonBuilder();
-            buttonBuilder.WithEmote(emote);
-            buttonBuilder.WithCustomId(id);
-            buttonBuilder.WithStyle(style);
-            return buttonBuilder;
-        }
-
-        private ButtonBuilder CreateButton(string label, string id, ButtonStyle style)
-        {
-            ButtonBuilder buttonBuilder = new ButtonBuilder();
-            buttonBuilder.WithLabel(label);
-            buttonBuilder.WithCustomId(id);
-            buttonBuilder.WithStyle(style);
-            return buttonBuilder;
-        }
-        #endregion
     }
 }

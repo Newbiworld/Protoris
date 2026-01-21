@@ -1,7 +1,11 @@
 ﻿using Discord;
+using Protoris.Data;
 using Protoris.Enum;
 using Protoris.Service.Interfaces;
 using Victoria;
+using YoutubeExplode;
+using YoutubeExplode.Common;
+using YoutubeExplode.Playlists;
 
 namespace Protoris.Service
 {
@@ -10,6 +14,7 @@ namespace Protoris.Service
         private readonly IMusicService _musicService;
         private readonly LavaNode<LavaPlayer<LavaTrack>, LavaTrack> _lava;
         private readonly IExceptionService _exceptionService;
+        private readonly YoutubeClient _youtubeClient;
         public DiscordMusicService(
             IMusicService musicService,
             LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lava,
@@ -18,6 +23,7 @@ namespace Protoris.Service
             _musicService = musicService;
             _exceptionService = exceptionService;
             _lava = lava;
+            _youtubeClient = new YoutubeClient();
         }
 
         #region General Interaction
@@ -51,7 +57,38 @@ namespace Protoris.Service
             }
         }
 
-        public async Task HandleMusicCommand(IDiscordInteraction interaction, EMusicCommand commandEnum)
+        public async Task MultiplePlayMusic(IInteractionContext context, IMessageChannel currentMessageChannel, string url)
+        {
+            try
+            {
+                IGuildUser? user = context.Interaction.User as IGuildUser;
+                if (user == null)
+                {
+                    await context.Interaction.RespondAsync("You don't event exist!", ephemeral: true);
+                    return;
+                }
+
+                IVoiceChannel? currentVoiceChannel = user.VoiceChannel;
+                if (currentVoiceChannel == null)
+                {
+                    await context.Interaction.RespondAsync("Woah, I ain't accepting this list when you're not with me!", ephemeral: true);
+                    return;
+                }
+
+                await context.Interaction.DeferAsync(); // In the off chance the loading takes more than 3 seconds, we defers it
+                PlaylistToAddInfo playlistInfo = await GetPlaylistInfoFromUrl(url);
+                playlistInfo.RequestedBy = user;
+                await _musicService.AddMusics(context, currentVoiceChannel, currentMessageChannel, user, playlistInfo);
+            }
+            catch (Exception exception)
+            {
+                await context.Interaction.RespondAsync("Awww man, something's wrong, I couldn't handle this music request!");
+                _exceptionService.LogException(exception);
+            }
+        }
+
+
+        public async Task HandleMusicCommand(IDiscordInteraction interaction, EMusicCommand commandEnum, int index = 0)
         {
             try
             {
@@ -73,10 +110,10 @@ namespace Protoris.Service
                         await _musicService.Skip(interaction, guildUser!);
                         break;
                     case EMusicCommand.ShowPlaylist:
-                        await _musicService.ShowPlaylist(interaction, guildUser!);
+                        await _musicService.ShowPlaylist(interaction, guildUser!, index);
                         break;
                     case EMusicCommand.ShowGoTo:
-                        await _musicService.ShowGoTo(interaction, guildUser!);
+                        await _musicService.ShowGoTo(interaction, guildUser!, index);
                         break;
                 }
             }
@@ -89,7 +126,7 @@ namespace Protoris.Service
         #endregion
 
         #region  Component Interaction
-        public async Task HandleComponentInteraction(IComponentInteraction interaction, string trackId, EMusicInteraction musicInteraction )
+        public async Task HandleComponentInteraction(IComponentInteraction interaction, string param, EMusicInteraction musicInteraction )
         {
             IGuildUser? guildUser = interaction.User as IGuildUser;
             (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
@@ -103,10 +140,16 @@ namespace Protoris.Service
             switch (musicInteraction)
             {
                 case EMusicInteraction.Remove:
-                    await RemoveSong(interaction, guildUser!, trackId);
+                    await RemoveSong(interaction, guildUser!, param);
                     break;
                 case EMusicInteraction.GoToSong:
-                    await GoToTrack(interaction, guildUser!, trackId);
+                    await GoToTrack(interaction, guildUser!, param);
+                    break;
+                case EMusicInteraction.Playlist:
+                    await ShowPlaylistInteraction(interaction, guildUser!, param);
+                    break;
+                case EMusicInteraction.GoTo:
+                    await ShowGotoInteraction(interaction, guildUser!, param);
                     break;
             }
         }
@@ -121,6 +164,68 @@ namespace Protoris.Service
         {
             ComponentBuilderV2 builder = await _musicService.GoToSong(guildUser, trackId);
             await interaction.UpdateAsync(m => m.Components = builder.Build());
+        }
+
+        private async Task ShowPlaylistInteraction(IComponentInteraction interaction, IGuildUser guildUser, string param)
+        {
+            bool shouldInit = param.Contains("init");
+            if (shouldInit) param.Replace("init", string.Empty);
+            int.TryParse(param, out int index);
+
+            if (shouldInit)
+            {
+                await _musicService.ShowPlaylist(interaction, guildUser!, index);
+            }
+            else
+            {
+                ComponentBuilderV2 builder = await _musicService.ShowPlaylist(guildUser, index);
+                await interaction.UpdateAsync(m => m.Components = builder.Build());
+            }
+        }
+
+        private async Task ShowGotoInteraction(IComponentInteraction interaction, IGuildUser guildUser, string param)
+        {
+            bool shouldInit = param.Contains("init");
+            if (shouldInit) param.Replace("init", string.Empty);
+            int.TryParse(param, out int index);
+
+            if (shouldInit)
+            {
+                await _musicService.ShowGoTo(interaction, guildUser!, index);
+            }
+            else
+            {
+                ComponentBuilderV2 builder = await _musicService.ShowGoTo(guildUser, index);
+                await interaction.UpdateAsync(m => m.Components = builder.Build());
+            }
+        }
+
+        private async Task<PlaylistToAddInfo> GetPlaylistInfoFromUrl(string url)
+        {
+            PlaylistToAddInfo playlistToAddInfo = new PlaylistToAddInfo();
+            playlistToAddInfo.PlaylistUrl = url;
+
+            // Only has youtube for now
+            try
+            {
+                if (url.Contains("youtube"))
+                {
+                    Playlist playlistMetadata = await _youtubeClient.Playlists.GetAsync(url);
+                    IReadOnlyCollection<PlaylistVideo> playlistVideosMetadata = await _youtubeClient.Playlists.GetVideosAsync(url);
+                    playlistToAddInfo.PlaylistName = playlistMetadata?.Title;
+                    foreach (PlaylistVideo videoMetadata in playlistVideosMetadata)
+                    {
+                        playlistToAddInfo.PlaylistVideosUrl.Add(videoMetadata.Url);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Do nothing because we're cool and hips like that
+            }
+
+
+            return playlistToAddInfo;
         }
         #endregion
 

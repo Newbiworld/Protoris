@@ -2,7 +2,9 @@
 {
     public enum EMusicInteraction
     {
+        Playlist,
         Remove,
-        GoToSong
+        GoTo,
+        GoToSong,
     }
 }
