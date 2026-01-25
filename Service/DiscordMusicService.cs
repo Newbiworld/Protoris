@@ -128,29 +128,37 @@ namespace Protoris.Service
         #region  Component Interaction
         public async Task HandleComponentInteraction(IComponentInteraction interaction, string param, EMusicInteraction musicInteraction )
         {
-            IGuildUser? guildUser = interaction.User as IGuildUser;
-            (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
-
-            if (!canApplyCommand)
+            try
             {
-                await interaction.RespondAsync(reason, ephemeral: true);
-                return;
+                IGuildUser? guildUser = interaction.User as IGuildUser;
+                (bool canApplyCommand, string reason) = await CanApplyCommand(guildUser, _lava);
+
+                if (!canApplyCommand)
+                {
+                    await interaction.RespondAsync(reason, ephemeral: true);
+                    return;
+                }
+
+                switch (musicInteraction)
+                {
+                    case EMusicInteraction.Remove:
+                        await RemoveSong(interaction, guildUser!, param);
+                        break;
+                    case EMusicInteraction.GoToSong:
+                        await GoToTrack(interaction, guildUser!, param);
+                        break;
+                    case EMusicInteraction.Playlist:
+                        await ShowPlaylistInteraction(interaction, guildUser!, param);
+                        break;
+                    case EMusicInteraction.GoTo:
+                        await ShowGotoInteraction(interaction, guildUser!, param);
+                        break;
+                }
             }
-
-            switch (musicInteraction)
+            catch (Exception exception)
             {
-                case EMusicInteraction.Remove:
-                    await RemoveSong(interaction, guildUser!, param);
-                    break;
-                case EMusicInteraction.GoToSong:
-                    await GoToTrack(interaction, guildUser!, param);
-                    break;
-                case EMusicInteraction.Playlist:
-                    await ShowPlaylistInteraction(interaction, guildUser!, param);
-                    break;
-                case EMusicInteraction.GoTo:
-                    await ShowGotoInteraction(interaction, guildUser!, param);
-                    break;
+                await interaction.RespondAsync("NOTHING SHALL BREAK ME, BBY!");
+                _exceptionService.LogException(exception);
             }
         }
 
