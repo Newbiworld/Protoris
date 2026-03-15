@@ -190,10 +190,8 @@ namespace Protoris.Service
                     MusicPlaylist? playlist = _currentPlaylists.GetValueOrDefault(currentPlayingMusic.GuildId);
                     if (playlist != null)
                     {
-
                         ComponentBuilderV2 builder = await _musicComponentService.BuildPlayingTrackResponse(playlist.BotUser, currentPlayingMusic.TrackInfo, currentPlayingMusic.GetCurrentTime());
                         await currentPlayingMusic.OriginalMessage.ModifyAsync(props => props.Components = builder.Build());
-
                     }
                 }
             }

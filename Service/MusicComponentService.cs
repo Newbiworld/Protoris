@@ -26,18 +26,27 @@ namespace Protoris.Service
             IGuildUser requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
-
-            SectionBuilder musicSection = new SectionBuilder();
-            musicSection.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
-            musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
-            musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
-
-            UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(currentTrack.Artwork);
-            ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
-            musicSection.WithAccessory(thumbnailBuilder);
-
             ContainerBuilder musicContainer = new ContainerBuilder();
-            musicContainer.AddComponent(musicSection);
+
+            if (currentTrack.Artwork != null)
+            {
+                SectionBuilder musicSection = new SectionBuilder();
+                musicSection.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
+                musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
+                musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
+
+                UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(currentTrack.Artwork);
+                ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
+                musicSection.WithAccessory(thumbnailBuilder);
+                musicContainer.AddComponent(musicSection);
+            }
+            else
+            {
+                musicContainer.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
+                musicContainer.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
+                musicContainer.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
+            }
+
             musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
             musicContainer.WithAccentColor(Color.Green);
 

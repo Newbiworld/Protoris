@@ -105,7 +105,7 @@ namespace Protoris.Clients.Bot
             }
         }
 
-        private async Task HandleOnButtonClicked(SocketInteraction arg)
+        private Task HandleOnButtonClicked(SocketInteraction arg)
         {
             switch (arg)
             {
@@ -113,15 +113,13 @@ namespace Protoris.Clients.Bot
                     switch (component.Data.CustomId)
                     {
                         case { } when component.Data.CustomId.StartsWith("Music"):
-                            await _musicInteractionService.ApplyCorrectResponse(component.Data.CustomId, component);
-                            break;
+                            return _musicInteractionService.ApplyCorrectResponse(component.Data.CustomId, component);
 
                         default:
-                            return;
+                            return Task.CompletedTask;
                     }
-                    break;
                 default:
-                    return;
+                    return Task.CompletedTask;
             }
         }
 

@@ -15,38 +15,37 @@ namespace Protoris.Commands
         [SlashCommand(name: "play-lizard", description: "Make the lizard play musics")]
         public async Task PlayMusicCommand(string url)
         {
-            await _discordMusicService.PlayMusic(Context, Context.Channel, url);
+            _discordMusicService.PlayMusic(Context, Context.Channel, url);
         }
 
         [SlashCommand(name: "multiple-play-lizard", description: "Play a playlist!")]
         public async Task MulitplePlayCommand(string url)
         {
-            await _discordMusicService.MultiplePlayMusic(Context, Context.Channel, url);
+            _discordMusicService.MultiplePlayMusic(Context, Context.Channel, url);
         }
 
         [SlashCommand(name: "stop-lizard", description: "Make the lizard stop singing!")]
         public async Task StopMusicCommand()
         {
-            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Stop);
+            _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Stop);
         }
 
         [SlashCommand(name: "skip-lizard", description: "Make the lizard stop singing!")]
         public async Task SkipMusicCommand()
         {
-            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Skip);
-
+            _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.Skip);
         }
 
         [SlashCommand(name: "playlist-lizard", description: "Show what the lizard's gonna sing!")]
         public async Task ShowPlaylistCommand()
         {
-            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowPlaylist);
+            _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowPlaylist);
         }
 
         [SlashCommand(name: "goto-lizard", description: "Skip to said song!")]
         public async Task ShowGoToCommand()
         {
-            await _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowGoTo);
+            _discordMusicService.HandleMusicCommand(Context.Interaction, EMusicCommand.ShowGoTo);
         }
     }
 }
