@@ -1,6 +1,6 @@
 ﻿namespace Protoris.Data
 {
-    public class IsInVcResponse
+    public class AudioPlayerState
     {
         public bool IsInVc { get; set; }
         public bool IsPlaying { get; set; }

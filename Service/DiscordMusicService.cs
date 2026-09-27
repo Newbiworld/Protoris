@@ -234,7 +234,7 @@ namespace Protoris.Service
                     return;
                 }
 
-                IsInVcResponse response = await _musicPlaylistService.IsAudioPlayerInVc(guildUser!.Guild.Id);
+                AudioPlayerState response = await _musicPlaylistService.GetAudioPlayerState(guildUser!.Guild.Id);
 
                 if (!response.IsPlaying)
                 {

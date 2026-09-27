@@ -11,18 +11,14 @@
             if (trackInfo != null) _playlist.Remove(trackInfo);
         }
 
-        public int RemoveToTrackId(string id)
+        public void RemoveToTrackId(string id)
         {
-            int numberOfTrackToRemove = -1;
             TrackInformations? trackToGoTo = _playlist.FirstOrDefault(x => x.Id == id);
 
             if (trackToGoTo != null)
             {
-                numberOfTrackToRemove = _playlist.IndexOf(trackToGoTo);
-                _playlist.RemoveRange(0, numberOfTrackToRemove);
+                _playlist.RemoveRange(0, _playlist.IndexOf(trackToGoTo));
             }
-
-            return numberOfTrackToRemove;
         }
 
         public void AddRange(List<TrackInformations> infos)

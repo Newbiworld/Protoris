@@ -57,8 +57,7 @@ namespace Protoris.Service
         {
             if (_currentPlaylists.TryGetValue(guildId, out MusicPlaylist? guildPlayList))
             {
-                int numberToRemove = guildPlayList.RemoveToTrackId(trackId);
-                TrackInformations? trackToGoTo = guildPlayList.Playlist.FirstOrDefault(x => x.Id == trackId);
+                guildPlayList.RemoveToTrackId(trackId);
                 await _audioPlayer.SkipAsync(guildId);
             }
         }
@@ -77,9 +76,9 @@ namespace Protoris.Service
             return true;
         }
 
-        public Task<IsInVcResponse> IsAudioPlayerInVc(ulong guildId)
+        public Task<AudioPlayerState> GetAudioPlayerState(ulong guildId)
         {
-            return _audioPlayer.IsInVc(guildId);
+            return _audioPlayer.GetPlayerState(guildId);
         }
 
         public async Task CleanUp(ulong guildId, IVoiceChannel? voiceChannel)
@@ -99,8 +98,8 @@ namespace Protoris.Service
 
                 if (trackToPlay != null)
                 {
-                    bool isPlaying = await _audioPlayer.PlayAsync(guildId, trackToPlay);
-                    if (isPlaying) return trackToPlay;
+                    await _audioPlayer.PlayAsync(guildId, trackToPlay);
+                    return trackToPlay;
                 }
             }
 
@@ -113,8 +112,8 @@ namespace Protoris.Service
         private async Task<EPlayMusicResult> EnqueueTracks(ulong guildId, MusicPlaylist guildPlayList, List<TrackInformations> tracks)
         {
             guildPlayList.AddRange(tracks);
-            bool isPlaying = await _audioPlayer.IsPlaying(guildId);
-            return isPlaying ? EPlayMusicResult.Queued : EPlayMusicResult.NextToPlay;
+            AudioPlayerState res = await _audioPlayer.GetPlayerState(guildId);
+            return res.IsPlaying ? EPlayMusicResult.Queued : EPlayMusicResult.NextToPlay;
         }
 
         private MusicPlaylist InitializePlaylist(ulong guildId)

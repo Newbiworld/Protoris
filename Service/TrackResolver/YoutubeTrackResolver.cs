@@ -28,7 +28,6 @@ namespace Protoris.Service.TrackResolver
                     PlaylistUrl = uri.OriginalString,
                 };
 
-                
                 foreach (PlaylistVideo videoMetadata in playlistVideosMetadata)
                 {
                     playlistToAddInfo.PlaylistTracksInfo.Add(GetInfoFromMetaData(videoMetadata));

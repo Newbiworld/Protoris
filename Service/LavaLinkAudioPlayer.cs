@@ -4,7 +4,6 @@ using Protoris.Enum;
 using Protoris.Events.Data;
 using Protoris.Service.Interfaces;
 using Victoria;
-using Victoria.Rest.Search;
 using Victoria.WebSocket.EventArgs;
 
 namespace Protoris.Service
@@ -36,10 +35,9 @@ namespace Protoris.Service
             }
         }
 
-        public async Task<bool> PlayAsync(ulong guildId, TrackInformations trackInfo)
+        public async Task PlayAsync(ulong guildId, TrackInformations trackInfo)
         {
             await _trackPreloader.PlayTrack(guildId, trackInfo);
-            return true;
         }
 
         public async Task SkipAsync(ulong guildId)
@@ -54,12 +52,12 @@ namespace Protoris.Service
             await _lava.LeaveAsync(voiceChannel);
         }
 
-        public async Task<IsInVcResponse> IsInVc(ulong guildId)
+        public async Task<AudioPlayerState> GetPlayerState(ulong guildId)
         {
             LavaPlayer<LavaTrack>? lavaPlayer = await _lava.TryGetPlayerAsync(guildId);
             if (lavaPlayer == null)
             {
-                return new IsInVcResponse()
+                return new AudioPlayerState()
                 {
                     IsInVc = false,
                     IsPlaying = false,
@@ -69,7 +67,7 @@ namespace Protoris.Service
 
             if (!lavaPlayer.State.IsConnected)
             {
-                return new IsInVcResponse()
+                return new AudioPlayerState()
                 {
                     IsInVc = true,
                     IsPlaying = false,
@@ -79,7 +77,7 @@ namespace Protoris.Service
 
             if (lavaPlayer.Track == null)
             {
-                return new IsInVcResponse()
+                return new AudioPlayerState()
                 {
                     IsInVc = true,
                     IsPlaying = false,
@@ -87,16 +85,10 @@ namespace Protoris.Service
                 };
             }
 
-            return new IsInVcResponse()
+            return new AudioPlayerState()
             {
                 IsPlaying = true
             };
-        }
-
-        public async Task<bool> IsPlaying(ulong guildId)
-        {
-            LavaPlayer<LavaTrack>? lavaPlayer = await _lava.TryGetPlayerAsync(guildId);
-            return lavaPlayer?.Track != null;
         }
 
         public async Task CleanUp(ulong guildId, IVoiceChannel? voiceChannel)

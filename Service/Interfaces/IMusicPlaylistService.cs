@@ -15,7 +15,7 @@ namespace Protoris.Service.Interfaces
         public Task RemoveSong(ulong guildId, string trackId);
         public Task GoToSong(ulong guildId, string trackId);
         public bool TryGetPlaylist(ulong guildId, [NotNullWhen(true)] out IReadOnlyCollection<TrackInformations> playlist);
-        public Task<IsInVcResponse> IsAudioPlayerInVc(ulong guildId);
+        public Task<AudioPlayerState> GetAudioPlayerState(ulong guildId);
         public Task CleanUp(ulong guildId, IVoiceChannel? voiceChannel);
     }
 }
