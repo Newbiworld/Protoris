@@ -15,13 +15,13 @@ namespace Protoris.Commands
         [SlashCommand(name: "play-lizard", description: "Make the lizard play musics")]
         public async Task PlayMusicCommand(string url)
         {
-            _discordMusicService.PlayMusic(Context, Context.Channel, url);
+            _discordMusicService.PlayMusic(Context, url);
         }
 
         [SlashCommand(name: "multiple-play-lizard", description: "Play a playlist!")]
         public async Task MulitplePlayCommand(string url)
         {
-            _discordMusicService.MultiplePlayMusic(Context, Context.Channel, url);
+            _discordMusicService.MultiplePlayMusic(Context, url);
         }
 
         [SlashCommand(name: "stop-lizard", description: "Make the lizard stop singing!")]

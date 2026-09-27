@@ -6,7 +6,10 @@ namespace Protoris.Data
     public class TrackInformations
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public LavaTrack Track { get; set; }
-        public IGuildUser RequestedBy { get; set; }
+        public string Title { get; set; }
+        public string Url { get; set; }
+        public TimeSpan Duration { get; set; }
+        public string? Artwork { get; set; }
+        public string RequestedBy { get; set; }
     }
 }

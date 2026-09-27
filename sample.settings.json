@@ -5,6 +5,10 @@
     "QueueStorageUrl": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
 
+    // Spotify Config
+    "SpotifyClientId": "Client Id Here",
+    "SpotifyClientSecret": "Client Secret Here",
+
     // Bot config
     "BotToken": "Token Here",
     "BotTestingGround": "Your Server Id here",

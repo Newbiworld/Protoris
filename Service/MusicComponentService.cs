@@ -1,10 +1,8 @@
 ﻿using Discord;
-using Discord.WebSocket;
 using Protoris.Data;
 using Protoris.Enum;
 using Protoris.Extensions;
 using Protoris.Service.Interfaces;
-using Victoria;
 
 namespace Protoris.Service
 {
@@ -18,24 +16,23 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildPlayingTrackResponse(IGuildUser botUser, TrackInformations trackInfo, TimeSpan timeSinceStarted)
         {
-            Emote coolEzel = _emoteService.EzelCool;
-            Emote rightArrow = _emoteService.ArrowRight;
-            Emote stop = _emoteService.Stop;
+            EmoteWithFallBack coolEzel = _emoteService.EzelCool;
+            EmoteWithFallBack rightArrow = _emoteService.ArrowRight;
+            EmoteWithFallBack stop = _emoteService.Stop;
 
-            LavaTrack currentTrack = trackInfo.Track;
-            IGuildUser requestedBy = trackInfo.RequestedBy;
+            string requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             ContainerBuilder musicContainer = new ContainerBuilder();
 
-            if (currentTrack.Artwork != null)
+            if (trackInfo.Artwork != null)
             {
                 SectionBuilder musicSection = new SectionBuilder();
                 musicSection.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
-                musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
-                musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
+                musicSection.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
+                musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}");
 
-                UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(currentTrack.Artwork);
+                UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(trackInfo.Artwork);
                 ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
                 musicSection.WithAccessory(thumbnailBuilder);
                 musicContainer.AddComponent(musicSection);
@@ -43,11 +40,11 @@ namespace Protoris.Service
             else
             {
                 musicContainer.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
-                musicContainer.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
-                musicContainer.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{currentTrack.Duration.ToString(@"mm\:ss")}");
+                musicContainer.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
+                musicContainer.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}");
             }
 
-            musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Green);
 
             ContainerBuilder actionContainer = new ContainerBuilder();
@@ -68,42 +65,40 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildAddingTrackResponse(IGuildUser botUser, TrackInformations trackInfo)
         {
-            Emote thinkingEzel = _emoteService.EzelThink;
-
-            LavaTrack currentTrack = trackInfo.Track;
-            IGuildUser requestedBy = trackInfo.RequestedBy;
+            EmoteWithFallBack thinkingEzel = _emoteService.EzelThink;
+            string requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
-            UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(currentTrack.Artwork);
+            UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(trackInfo.Artwork);
             ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
             SectionBuilder musicSection = new SectionBuilder();
 
             musicSection.WithTextDisplay($"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding");
-            musicSection.WithTextDisplay($"**{currentTrack.Title}** \n[Listen Here]({currentTrack.Url})");
-            musicSection.WithTextDisplay($"**Duration** \n{currentTrack.Duration.ToString(@"mm\:ss")}");
+            musicSection.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
+            musicSection.WithTextDisplay($"**Duration** \n{trackInfo.Duration.ToString(@"mm\:ss")}");
             musicSection.WithAccessory(thumbnailBuilder);
 
             ContainerBuilder musicContainer = new ContainerBuilder();
             musicContainer.AddComponent(musicSection);
-            musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(musicContainer);
 
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildAddingTracksResponse(IGuildUser botUser, PlaylistToAddInfo PlaylistInfo)
+        public async Task<ComponentBuilderV2> BuildAddingTracksResponse(IGuildUser botUser, PlaylistInformations PlaylistInfo)
         {
-            Emote thinkingEzel = _emoteService.EzelThink;
+            EmoteWithFallBack thinkingEzel = _emoteService.EzelThink;
             IGuildUser requestedBy = PlaylistInfo.RequestedBy;
             string playlistName = string.IsNullOrEmpty(PlaylistInfo.PlaylistName) ? "Unknown" : PlaylistInfo.PlaylistName;
             TimeSpan totalTime = TimeSpan.Zero;
             PlaylistInfo.PlaylistTracksInfo.ForEach(x =>
             {
-                if (x?.Track?.Duration != null)
+                if (x?.Duration != null)
                 {
-                    totalTime += x.Track.Duration;
+                    totalTime += x.Duration;
                 }
             });
 
@@ -122,7 +117,7 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildTrackNotFoundResponse(IGuildUser botUser, IGuildUser requestedBy, string songUrl)
         {
-            Emote nervousEzel = _emoteService.EzelNervous;
+            EmoteWithFallBack nervousEzel = _emoteService.EzelNervous;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             bool isUrl = Uri.TryCreate(songUrl, UriKind.Absolute, out Uri? uriResult)
                 && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
@@ -149,7 +144,7 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildStopResponse(IGuildUser botUser, IGuildUser requestedBy)
         {
-            Emote sadEzel = _emoteService.EzelSad;
+            EmoteWithFallBack sadEzel = _emoteService.EzelSad;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder leavingContainer = new ContainerBuilder();
@@ -165,7 +160,7 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildSkipResponse(IGuildUser botUser, IGuildUser requestedBy)
         {
-            Emote surprisedEzel = _emoteService.EzelSurprised;
+            EmoteWithFallBack surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder skippingContainer = new ContainerBuilder();
@@ -179,18 +174,18 @@ namespace Protoris.Service
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildRemoveResponse(IGuildUser botUser, IGuildUser requestedBy, LavaTrack? track)
+        public async Task<ComponentBuilderV2> BuildRemoveResponse(IGuildUser botUser, IGuildUser requestedBy, TrackInformations? trackInfo)
         {
-            Emote surprisedEzel = _emoteService.EzelSurprised;
+            EmoteWithFallBack surprisedEzel = _emoteService.EzelSurprised;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder removeContainer = new ContainerBuilder();
             removeContainer.WithTextDisplay($"### {surprisedEzel.ToString()} {botUser.GetNicknameOrUsername()} Removing");
             removeContainer.WithTextDisplay($"**{botUser.GetNicknameOrUsername()} was asked to remove a song!**");
 
-            if (track != null)
+            if (trackInfo != null)
             {
-                removeContainer.WithTextDisplay($"Removed song: [{track.Title}]({track.Url})");
+                removeContainer.WithTextDisplay($"Removed song: [{trackInfo.Title}]({trackInfo.Url})");
                 removeContainer.WithTextDisplay($"Removed by: {requestedBy.GetNicknameOrUsername()}");
             }
             else
@@ -205,10 +200,10 @@ namespace Protoris.Service
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations, int index)
+        public async Task<ComponentBuilderV2> BuildPlaylistResponse(IGuildUser botUser, IGuildUser requestedBy, IReadOnlyCollection<TrackInformations> trackInformations, int index)
         {
-            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
-            Emote delete = _emoteService.Bin;
+            EmoteWithFallBack thinkingHardEzel = _emoteService.EzelThinkWithCloud;
+            EmoteWithFallBack delete = _emoteService.Bin;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
@@ -228,10 +223,10 @@ namespace Protoris.Service
             return builder;
         }
 
-        public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser botUser, IGuildUser requestedBy, List<TrackInformations> trackInformations, int index)
+        public async Task<ComponentBuilderV2> BuildGoToResponse(IGuildUser botUser, IGuildUser requestedBy, IReadOnlyCollection<TrackInformations> trackInformations, int index)
         {
-            Emote thinkingHardEzel = _emoteService.EzelThinkWithCloud;
-            Emote arrowEmote = _emoteService.ArrowRight;
+            EmoteWithFallBack thinkingHardEzel = _emoteService.EzelThinkWithCloud;
+            EmoteWithFallBack arrowEmote = _emoteService.ArrowRight;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder playlistContainer = new ContainerBuilder();
@@ -253,8 +248,8 @@ namespace Protoris.Service
 
         public async Task<ComponentBuilderV2> BuildFarewellResponse(IGuildUser botUser)
         {
-            Emote sleepingEzel = _emoteService.EzelSleep;
-            Emote heartEzel = _emoteService.EzelHeart;
+            EmoteWithFallBack sleepingEzel = _emoteService.EzelSleep;
+            EmoteWithFallBack heartEzel = _emoteService.EzelHeart;
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
             ContainerBuilder farewellContainer = new ContainerBuilder();

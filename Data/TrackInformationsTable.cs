@@ -1,18 +1,17 @@
 ﻿using Discord;
 using Protoris.Service;
-using Victoria;
 
 namespace Protoris.Data
 {
     public class TrackInformationsTable
     {
-        private readonly List<TrackInformations> _tracks;
+        private readonly IReadOnlyCollection<TrackInformations> _tracks;
         private readonly int _pageSize = 10;
         private int _currentPage;
         private string _typeId;
         private string _actionTypeId;
 
-        public TrackInformationsTable(List<TrackInformations> tracks,
+        public TrackInformationsTable(IReadOnlyCollection<TrackInformations> tracks,
             int currentPage,
             string typeId,
             string actionTypeId)
@@ -42,7 +41,7 @@ namespace Protoris.Data
                     int currentIndex = _currentPage * _pageSize + i;
                     if (currentIndex >= _tracks.Count) break;
 
-                    TrackInformations trackInfo = _tracks[currentIndex];
+                    TrackInformations trackInfo = _tracks.ElementAt(currentIndex);
                     string id = trackInfo.Id;
 
                     AddTrackToTable(trackInfo,
@@ -62,12 +61,11 @@ namespace Protoris.Data
             string buttonId,
             int number)
         {
-            LavaTrack track = trackInfo.Track;
             string id = trackInfo.Id;
 
             SectionBuilder trackSection = new SectionBuilder();
             trackSection.WithAccessory(addButtonFunction(buttonId));
-            trackSection.WithTextDisplay($"**{number}.** [{track.Title}]({track.Url}) | Duration: {track.Duration.ToString(@"mm\:ss")}");
+            trackSection.WithTextDisplay($"**{number}.** [{trackInfo.Title}]({trackInfo.Url}) | Duration: {trackInfo.Duration.ToString(@"mm\:ss")}");
             playlistContainer.AddComponent(trackSection);
         }
 
