@@ -8,16 +8,16 @@ namespace Protoris.Controllers
 {
     public class MusicTimerController : ExceptionHandleMiddleware
     {
-        private readonly IMusicService _musicService;
-        public MusicTimerController(IMusicService musicService, IFileConfig fileConfig) : base(fileConfig)
+        private readonly IDiscordMusicService _discordMusicService;
+        public MusicTimerController(IDiscordMusicService discordMusicService, IFileConfig fileConfig) : base(fileConfig)
         {
-            _musicService = musicService;
+            _discordMusicService = discordMusicService;
         }
 
         [Function(nameof(UpdateCurrentPlayingSongTimer))]
         public async Task UpdateCurrentPlayingSongTimer([TimerTrigger("* * * * * *")] TimerInfo myTimer, ILogger log)
         {
-            await _musicService.UpdateCurrentlyPlayingSongs();
+            await _discordMusicService.UpdateCurrentlyPlayingSongs();
         }
     }
 }

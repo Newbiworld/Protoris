@@ -1,13 +1,18 @@
 ﻿using Discord;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Protoris.Data;
 
 namespace Protoris.Service
 {
     public static class DiscordComponentHelper
     {
-        public static ButtonBuilder CreateButton(Emote emote, string id, ButtonStyle style)
+        public static ButtonBuilder CreateButton(EmoteWithFallBack emoteWithFallBack, string id, ButtonStyle style)
+        {
+            return emoteWithFallBack.Emote == null
+                ? CreateButton(emoteWithFallBack.FallBackDescription, id, style)
+                : CreateButton(emoteWithFallBack.Emote, id, style);
+        }
+
+        private static ButtonBuilder CreateButton(Emote emote, string id, ButtonStyle style)
         {
             ButtonBuilder buttonBuilder = new ButtonBuilder();
             buttonBuilder.WithEmote(emote);

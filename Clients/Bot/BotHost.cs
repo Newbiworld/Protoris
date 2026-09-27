@@ -2,7 +2,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Hosting;
-using Protoris.Enum;
 using Protoris.Service.InteractionService;
 using Protoris.Service.Interfaces;
 using System.Reflection;
@@ -17,13 +16,13 @@ namespace Protoris.Clients.Bot
         private readonly InteractionService _interactionService;
         private readonly IServiceProvider _servicesProviders;
         private readonly IMusicInteractionService _musicInteractionService;
-        private readonly IMusicService _musicService;
+        private readonly IMusicPlaylistService _musicService;
         private readonly IEmoteService _emoteService;
 
         public BotHost(DiscordSocketClient client,
             IBotConfig botConfig,
             IServiceProvider serviceProvider,
-            IMusicService musicService,
+            IMusicPlaylistService musicService,
             IEmoteService emoteService,
             IMusicInteractionService musicInteractionService)
         {
@@ -100,7 +99,7 @@ namespace Protoris.Clients.Bot
                 ulong? guildId = before.VoiceChannel?.Guild?.Id;
                 if (guildId != null)
                 {
-                    await _musicService.Stop(before.VoiceChannel!, user as IGuildUser);
+                    await _musicService.Stop(guildId.Value); // Send it through DiscordService?
                 }
             }
         }

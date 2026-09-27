@@ -5,11 +5,13 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Protoris.Clients.Bot;
+using Protoris.Events;
 using Protoris.Middleware;
 using Protoris.Service;
 using Protoris.Service.Config;
 using Protoris.Service.InteractionService;
 using Protoris.Service.Interfaces;
+using Protoris.Service.TrackResolver;
 using Victoria;
 
 FunctionsApplicationBuilder builder = FunctionsApplication.CreateBuilder(args);
@@ -19,7 +21,7 @@ builder.ConfigureFunctionsWebApplication();
 builder.UseMiddleware<ExceptionHandleMiddleware>();
 
 builder.Services
-    .AddSingleton<IMusicService, MusicService>()
+    .AddSingleton<IMusicPlaylistService, MusicPaylistService>()
     .AddSingleton<IFileConfig, FileConfig>()
     .AddSingleton<IExceptionService, ExceptionService>()
     .AddSingleton<IMusicInteractionService, MusicInteractionService>()
@@ -36,21 +38,17 @@ builder.Services
     .ConfigureFunctionsApplicationInsights()
     .AddSingleton(new DiscordSocketClient())
     .AddSingleton<IBotConfig, BotConfig>()
-    .AddHostedService<BotHost>();
-
-string? hasEmotes = Environment.GetEnvironmentVariable("HasEmotes");
-
-if (string.IsNullOrEmpty(hasEmotes) || hasEmotes.ToLower() != "true")
-{
-    builder.Services
-        .AddSingleton<IEmoteService, FakeEmoteService>()
-        .AddSingleton<IMusicComponentService, MusicComponentServiceWithoutEmotes>();
-}
-else
-{
-    builder.Services
-        .AddSingleton<IEmoteService, EmoteService>()
-        .AddSingleton<IMusicComponentService, MusicComponentService>();
-}
+    .AddSingleton<ISpotifyConfig, SpotifyConfig>()
+    .AddSingleton<IDiscordContextProvider, DiscordContextProvider>()
+    .AddSingleton<IMasterTrackResolver, MasterTrackResolver>()
+    .AddSingleton<ITrackResolver, YoutubeTrackResolver>()
+    .AddSingleton<ITrackResolver, SpotifyTrackResolver>()
+    .AddSingleton<ITrackResolver, LavalinkTrackResolver>()
+    .AddSingleton<IAudioPlayer, LavaLinkAudioPlayer>()
+    .AddSingleton<ITrackPreloader, LavaLinkTrackPreLoader>()
+    .AddHostedService<MusicEventHandler>() // Probably not catholic
+    .AddHostedService<BotHost>()
+    .AddSingleton<IEmoteService, EmoteService>()
+    .AddSingleton<IMusicComponentService, MusicComponentService>();
 
 builder.Build().Run();
