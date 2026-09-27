@@ -8,25 +8,24 @@ namespace Protoris.Service.TrackResolver
     public class YoutubeTrackResolver : ITrackResolver
     {
         private readonly YoutubeClient _youtubeClient;
+        private readonly List<string> _validYoutubeHostName = ["youtube.com", "m.youtube.com", "youtu.be", "www.youtube.com"];
         public YoutubeTrackResolver()
         {
             _youtubeClient = new YoutubeClient();
         }
 
-        public async Task<PlaylistInformations?> ResolvePlaylist(string url)
+        public async Task<PlaylistInformations?> ResolvePlaylist(Uri uri)
         {
-            if (!url.Contains("youtube")) return null;
+            if (!_validYoutubeHostName.Contains(uri.Host)) return null;
 
-
-            // Only has youtube for now
             try
             {
-                Playlist playlistMetadata = await _youtubeClient.Playlists.GetAsync(url);
-                IReadOnlyCollection<PlaylistVideo> playlistVideosMetadata = await _youtubeClient.Playlists.GetVideosAsync(url).ToListAsync();
+                Playlist playlistMetadata = await _youtubeClient.Playlists.GetAsync(uri.OriginalString);
+                IReadOnlyCollection<PlaylistVideo> playlistVideosMetadata = await _youtubeClient.Playlists.GetVideosAsync(uri.OriginalString).ToListAsync();
                 PlaylistInformations playlistToAddInfo = new PlaylistInformations()
                 {
                     PlaylistName = playlistMetadata.Title,
-                    PlaylistUrl = playlistMetadata.Url,
+                    PlaylistUrl = uri.OriginalString,
                 };
 
                 
@@ -46,13 +45,13 @@ namespace Protoris.Service.TrackResolver
             return null;
         }
 
-        public async Task<TrackInformations?> ResolveTrack(string url)
+        public async Task<TrackInformations?> ResolveTrack(Uri uri)
         {
-            if (!url.Contains("youtube")) return null;
+            if (!_validYoutubeHostName.Contains(uri.Host)) return null;
 
             try
             {
-                Video playlistMetadata = await _youtubeClient.Videos.GetAsync(url);
+                Video playlistMetadata = await _youtubeClient.Videos.GetAsync(uri.OriginalString);
                 return GetInfoFromMetaData(playlistMetadata);
             }
             catch (Exception)

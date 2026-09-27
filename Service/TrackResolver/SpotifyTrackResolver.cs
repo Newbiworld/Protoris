@@ -2,7 +2,6 @@
 using Protoris.Enum;
 using Protoris.Service.Config;
 using SpotifyAPI.Web;
-using YoutubeExplode.Playlists;
 
 namespace Protoris.Service.TrackResolver
 {
@@ -19,21 +18,21 @@ namespace Protoris.Service.TrackResolver
             _spotifyClient = new SpotifyClient(config);
         }
 
-        public async Task<PlaylistInformations?> ResolvePlaylist(string url)
+        public async Task<PlaylistInformations?> ResolvePlaylist(Uri uri)
         {
             try
             {
-                ESpotifyRequestType requestType = GetSpotifyRequestTypeFromUrl(url, out string spotifyId);
-                if (requestType == ESpotifyRequestType.Album) return await HandleAlbum(spotifyId, url);
-                if (requestType == ESpotifyRequestType.Playlist) return await HandlePlaylist(spotifyId, url);
+                ESpotifyRequestType requestType = GetSpotifyRequestTypeFromUrl(uri, out string spotifyId);
+                if (requestType == ESpotifyRequestType.Album) return await HandleAlbum(spotifyId, uri);
+                if (requestType == ESpotifyRequestType.Playlist) return await HandlePlaylist(spotifyId, uri);
             }
             catch (Exception) { }
             return null;
         }
 
-        public async Task<TrackInformations?> ResolveTrack(string url)
+        public async Task<TrackInformations?> ResolveTrack(Uri uri)
         {
-            ESpotifyRequestType requestType = GetSpotifyRequestTypeFromUrl(url, out string spotifyId);
+            ESpotifyRequestType requestType = GetSpotifyRequestTypeFromUrl(uri, out string spotifyId);
             if (requestType != ESpotifyRequestType.Track) return null;
 
             try
@@ -45,7 +44,7 @@ namespace Protoris.Service.TrackResolver
             return null;
         }
 
-        private async Task<PlaylistInformations?> HandleAlbum(string spotifyId, string url)
+        private async Task<PlaylistInformations?> HandleAlbum(string spotifyId, Uri uri)
         {
             FullAlbum album = await _spotifyClient.Albums.Get(spotifyId);
 
@@ -80,7 +79,7 @@ namespace Protoris.Service.TrackResolver
         }
 
         // Will not works: need to be a user to read it
-        private async Task<PlaylistInformations?> HandlePlaylist(string spotifyId, string url)
+        private async Task<PlaylistInformations?> HandlePlaylist(string spotifyId, Uri uri)
         {
             FullPlaylist playlist = await _spotifyClient.Playlists.Get(spotifyId);
 
@@ -138,25 +137,21 @@ namespace Protoris.Service.TrackResolver
             };
         }
 
-        private ESpotifyRequestType GetSpotifyRequestTypeFromUrl(string url, out string spotifyId)
+        private ESpotifyRequestType GetSpotifyRequestTypeFromUrl(Uri uri, out string spotifyId)
         {
-            const string spotifyStartUrl = "https://open.spotify.com/";
+            const string spotifyStartUrl = "open.spotify.com";
             spotifyId = string.Empty;
+            string hostName = uri.Host;
+            if (!hostName.StartsWith(spotifyStartUrl)) return ESpotifyRequestType.Unknown;
 
-            if (!url.StartsWith(spotifyStartUrl)) return ESpotifyRequestType.Unknown;
-            
-            string fixedParts = url.Replace(spotifyStartUrl, string.Empty);
-            string[] separated = fixedParts.Split("/");
+            string[] separated = uri.AbsolutePath.Split("/", StringSplitOptions.RemoveEmptyEntries);
 
             if (separated.Length != 2) return ESpotifyRequestType.Unknown;
 
             string type = separated[0];
-
             spotifyId = separated[1];
-            int index = spotifyId.IndexOf("?");
-            if (index >= 0) spotifyId = spotifyId.Substring(0, index);
 
-            return separated[0] switch
+            return type switch
             {
                 "track" => ESpotifyRequestType.Track,
                 "album" => ESpotifyRequestType.Album,

@@ -14,9 +14,9 @@ namespace Protoris.Service.TrackResolver
             _lava = lava;
         }
 
-        public async Task<PlaylistInformations?> ResolvePlaylist(string url)
+        public async Task<PlaylistInformations?> ResolvePlaylist(Uri uri)
         {
-            SearchResponse searchResponse = await _lava.LoadTrackAsync(url);
+            SearchResponse searchResponse = await _lava.LoadTrackAsync(uri.OriginalString);
 
             if (searchResponse.Type == SearchType.Error || searchResponse.Type == SearchType.Empty)
                 return null;
@@ -27,13 +27,13 @@ namespace Protoris.Service.TrackResolver
             {
                 PlaylistName = searchResponse.Playlist.Name,
                 PlaylistTracksInfo = tracks,
-                PlaylistUrl = url,
+                PlaylistUrl = uri.OriginalString,
             };
         }
 
-        public async Task<TrackInformations?> ResolveTrack(string url)
+        public async Task<TrackInformations?> ResolveTrack(Uri uri)
         {
-            SearchResponse searchResponse = await _lava.LoadTrackAsync(url);
+            SearchResponse searchResponse = await _lava.LoadTrackAsync(uri.OriginalString);
 
             if (searchResponse.Type == SearchType.Error || searchResponse.Type == SearchType.Empty)
                 return null;

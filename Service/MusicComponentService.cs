@@ -20,7 +20,7 @@ namespace Protoris.Service
             EmoteWithFallBack rightArrow = _emoteService.ArrowRight;
             EmoteWithFallBack stop = _emoteService.Stop;
 
-            IGuildUser requestedBy = trackInfo.RequestedBy;
+            string requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             ContainerBuilder musicContainer = new ContainerBuilder();
@@ -44,7 +44,7 @@ namespace Protoris.Service
                 musicContainer.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}");
             }
 
-            musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Green);
 
             ContainerBuilder actionContainer = new ContainerBuilder();
@@ -66,7 +66,7 @@ namespace Protoris.Service
         public async Task<ComponentBuilderV2> BuildAddingTrackResponse(IGuildUser botUser, TrackInformations trackInfo)
         {
             EmoteWithFallBack thinkingEzel = _emoteService.EzelThink;
-            IGuildUser requestedBy = trackInfo.RequestedBy;
+            string requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
 
@@ -81,7 +81,7 @@ namespace Protoris.Service
 
             ContainerBuilder musicContainer = new ContainerBuilder();
             musicContainer.AddComponent(musicSection);
-            musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(musicContainer);
 

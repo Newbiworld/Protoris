@@ -10,6 +10,6 @@ namespace Protoris.Data
         public string Url { get; set; }
         public TimeSpan Duration { get; set; }
         public string? Artwork { get; set; }
-        public IGuildUser RequestedBy { get; set; }
+        public string RequestedBy { get; set; }
     }
 }
