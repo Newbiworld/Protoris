@@ -108,7 +108,6 @@ namespace Protoris.Service
                     discordContext = await _discordContextProvider.CreateDiscordContext(context, voiceChannel!);
                 }
 
-
                 discordContext.VoiceChannel = voiceChannel!;
                 EPlayMusicResult result = await _musicPlaylistService.AddMultipleMusic(discordContext, playlistInfo);
                 await SendPlayMultipleMusicResponse(context, result, discordContext, playlistInfo, url);
@@ -276,7 +275,7 @@ namespace Protoris.Service
         {
             ulong guildId = interaction.GuildId!.Value;
             await _musicPlaylistService.GoToSong(guildId, trackId);
-            await UpdateGoToResponse(guildId, interaction, guildUser);
+            await UpdateGoToResponse(guildId, interaction, guildUser, fixUglyNotskippingFirstSongBug: true);
         }
 
         private async Task ShowPlaylistInteraction(IComponentInteraction interaction, IGuildUser guildUser, string param)
@@ -377,11 +376,12 @@ namespace Protoris.Service
             }
         }
 
-        private async Task UpdateGoToResponse(ulong guildId, IComponentInteraction interaction, IGuildUser requestedBy, int index = 0)
+        private async Task UpdateGoToResponse(ulong guildId, IComponentInteraction interaction, IGuildUser requestedBy, int index = 0, bool fixUglyNotskippingFirstSongBug = false)
         {
 
             if (_musicPlaylistService.TryGetPlaylist(guildId, out IReadOnlyCollection<TrackInformations> playlist) && _discordContextProvider.TryGetContext(guildId, out DiscordContext discordContext))
             {
+                if (fixUglyNotskippingFirstSongBug) playlist = playlist.Skip(1).ToList();
                 ComponentBuilderV2 builder = await _musicComponentService.BuildGoToResponse(discordContext.BotUser, requestedBy, playlist, index);
                 await HandleUpdateResponse(interaction, builder);
             }
