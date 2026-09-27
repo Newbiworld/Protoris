@@ -25,24 +25,11 @@ namespace Protoris.Service
             ComponentBuilderV2 builder = new ComponentBuilderV2();
             ContainerBuilder musicContainer = new ContainerBuilder();
 
-            if (trackInfo.Artwork != null)
-            {
-                SectionBuilder musicSection = new SectionBuilder();
-                musicSection.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
-                musicSection.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
-                musicSection.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}");
+            string header = $"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing";
+            string title = $"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})";
+            string duration = $"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}";
 
-                UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(trackInfo.Artwork);
-                ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
-                musicSection.WithAccessory(thumbnailBuilder);
-                musicContainer.AddComponent(musicSection);
-            }
-            else
-            {
-                musicContainer.WithTextDisplay($"### {coolEzel.ToString()} {botUser.GetNicknameOrUsername()} Singing");
-                musicContainer.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
-                musicContainer.WithTextDisplay($"**Duration** \n{timeSinceStarted.ToString(@"mm\:ss")}/{trackInfo.Duration.ToString(@"mm\:ss")}");
-            }
+            ApplyArtThumbnail(musicContainer, trackInfo.Artwork, header, title, duration);
 
             musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Green);
@@ -69,18 +56,14 @@ namespace Protoris.Service
             string requestedBy = trackInfo.RequestedBy;
 
             ComponentBuilderV2 builder = new ComponentBuilderV2();
-
-            UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(trackInfo.Artwork);
-            ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
-            SectionBuilder musicSection = new SectionBuilder();
-
-            musicSection.WithTextDisplay($"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding");
-            musicSection.WithTextDisplay($"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})");
-            musicSection.WithTextDisplay($"**Duration** \n{trackInfo.Duration.ToString(@"mm\:ss")}");
-            musicSection.WithAccessory(thumbnailBuilder);
-
             ContainerBuilder musicContainer = new ContainerBuilder();
-            musicContainer.AddComponent(musicSection);
+
+            string header = $"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding";
+            string title = $"**{trackInfo.Title}** \n[Listen Here]({trackInfo.Url})";
+            string duration = $"**Duration** \n{trackInfo.Duration.ToString(@"mm\:ss")}";
+
+            ApplyArtThumbnail(musicContainer, trackInfo.Artwork, header, title, duration);
+
             musicContainer.WithTextDisplay($"Requested by: {requestedBy}");
             musicContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(musicContainer);
@@ -108,7 +91,8 @@ namespace Protoris.Service
             musicContainer.WithTextDisplay($"### {thinkingEzel.ToString()} {botUser.GetNicknameOrUsername()} Adding a LOT");
             musicContainer.WithTextDisplay($"**{playlistName}** \n[Listen Here]({PlaylistInfo.PlaylistUrl})");
             musicContainer.WithTextDisplay($"**Number of songs added:** \n{PlaylistInfo.PlaylistTracksInfo.Count}");
-            musicContainer.WithTextDisplay($"**Duration** \n{totalTime.ToString(@"hh\:mm\:ss")}"); musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
+            musicContainer.WithTextDisplay($"**Duration** \n{totalTime.ToString(@"hh\:mm\:ss")}");
+            musicContainer.WithTextDisplay($"Requested by: {requestedBy.GetNicknameOrUsername()}");
             musicContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(musicContainer);
 
@@ -259,6 +243,26 @@ namespace Protoris.Service
             farewellContainer.WithAccentColor(Color.Blue);
             builder.WithContainer(farewellContainer);
             return builder;
+        }
+
+        private void ApplyArtThumbnail(ContainerBuilder musicContainer,
+            string? artworkUrl,
+            params List<string> texts)
+        {
+            if (!string.IsNullOrEmpty(artworkUrl))
+            {
+                SectionBuilder musicSection = new SectionBuilder();
+                foreach (string text in texts) musicSection.WithTextDisplay(text);
+
+                UnfurledMediaItemProperties thumbnail = new UnfurledMediaItemProperties(artworkUrl);
+                ThumbnailBuilder thumbnailBuilder = new ThumbnailBuilder(thumbnail);
+                musicSection.WithAccessory(thumbnailBuilder);
+                musicContainer.AddComponent(musicSection);
+            }
+            else
+            {
+                foreach (string text in texts) musicContainer.WithTextDisplay(text);
+            }
         }
     }
 }

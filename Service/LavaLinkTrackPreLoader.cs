@@ -64,7 +64,7 @@ namespace Protoris.Service
                 if (tracksById.TryGetValue(trackInfo.Id, out LavaTrack? trackToPlay))
                 {
                     LavaPlayer<LavaTrack> lavaPlayer = await _lava.TryGetPlayerAsync(guildId);
-                    if (lavaPlayer != null) await lavaPlayer.PlayAsync(_lava, trackToPlay);
+                    if (lavaPlayer != null) await lavaPlayer.PlayAsync(_lava, trackToPlay, false);
                 }
             }
         }

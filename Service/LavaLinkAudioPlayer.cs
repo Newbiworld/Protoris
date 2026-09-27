@@ -43,7 +43,13 @@ namespace Protoris.Service
         public async Task SkipAsync(ulong guildId)
         {
             LavaPlayer<LavaTrack>? player = await _lava.TryGetPlayerAsync(guildId);
-            if (player?.Track?.Duration != null) await player.SeekAsync(_lava, player.Track.Duration);
+            if (player?.Track?.Duration != null)
+            {
+                TimeSpan duration = player.Track.Duration;
+                if (duration.Seconds < 0) OnMusicStatusChanged(EMusicStatus.OnMusicEnd, guildId); // We can't skip it manually, so we just force it
+                else await player.SeekAsync(_lava, player.Track.Duration);
+
+            }
         }
 
         public async Task StopAsync(ulong guildId, IVoiceChannel voiceChannel)
@@ -87,6 +93,7 @@ namespace Protoris.Service
 
             return new AudioPlayerState()
             {
+                IsInVc =  true,
                 IsPlaying = true
             };
         }
