@@ -46,10 +46,10 @@ namespace Protoris.Events
 
         private async Task HandleMusicChange(ulong guildId)
         {
-            AudioPlayerState isInVcResponse = await _audioPlayer.GetPlayerState(guildId);
+            AudioPlayerState audioPlayerState = await _audioPlayer.GetPlayerState(guildId);
             _playlistService.TryGetPlaylist(guildId, out IReadOnlyCollection<TrackInformations> playlistInformations);
 
-            if (!isInVcResponse.IsInVc || (!isInVcResponse.IsPlaying && playlistInformations.Count == 0))
+            if (!audioPlayerState.IsInVc || (!audioPlayerState.IsPlaying && playlistInformations.Count == 0))
             {
                 await _discordMusicService.CleanUpAndFarewell(guildId);
             }
